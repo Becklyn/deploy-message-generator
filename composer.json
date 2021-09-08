@@ -1,0 +1,27 @@
+{
+    "name": "becklyn/deploy-message-generator",
+    "type": "cli",
+    "description": "A symfony CLI tool that automatically produces beautiful deployment messages.",
+    "homepage": "https://github.com/Becklyn/gen-log",
+    "license": "BSD-3-Clause",
+    "require": {
+        "symfony/console": "^5.3",
+        "symfony/process": "5.3"
+    },
+    "require-dev": {
+        "php": ">=7.4",
+        "symfony/phpunit-bridge": "^5.3"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "Becklyn\\DeployMessageGenerator\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "bin": [
+        "./src/BecklynDeployMessageGenerator.php"
+    ]
+}
