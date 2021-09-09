@@ -41,7 +41,7 @@ jobs:
                     command: php vendor/bin/php-cs-fixer fix --diff --config vendor-bin/test/vendor/becklyn/php-cs/.php_cs.dist.php --dry-run --no-interaction
             -   run:
                     name: PHPUnit
-                    command: ./vendor/bin/simple-phpunit -c phpunit.xml --colors=always --testdox
+                    command: ./vendor/bin/simple-phpunit -c phpunit.xml.dist --colors=always --testdox
 
 workflows:
     version: 2
