@@ -17,7 +17,6 @@ Required Environment Variables
 | --- | --- |
 | SLACK_ACCESS_TOKEN | Token needed to send messages to slack |
 | SLACK_DEPLOYMENT_CHANNEL | The channel id where deployment messages should be sent to |
-| SLACK_TEST_CHANNEL | The channel id where the tests in this package may sent messages to |
 | | |
 | JIRA_DOMAIN | The base domain where the jira installation lives. e.g. `example.atlassian.net` |
 | JIRA_USER | The user used to lookup the ticket information |

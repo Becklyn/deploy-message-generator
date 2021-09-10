@@ -22,26 +22,11 @@ class SlackIntegrationTest extends TestCase
 
 
     /**
-     * This test will actually send a message to a test channel.
-     * If the message was sent without throwing exceptions the test will pass.
-     * It is up to te tester to check if the message was correctly sent.
-     *
      * @doesNotPerformAssertions
      */
     public function testMessageSending () : void
     {
-        if (!isset($_ENV["SLACK_TEST_CHANNEL"]))
-        {
-            self::markTestSkipped("Environment variable SLACK_TEST_CHANNEL not set");
-        }
-
-        if (!isset($_ENV["SLACK_DEPLOYMENT_CHANNEL"]))
-        {
-            self::markTestSkipped("Environment variable SLACK_DEPLOYMENT_CHANNEL not set");
-        }
-
-        $env = $_ENV["SLACK_DEPLOYMENT_CHANNEL"];
-        $_ENV["SLACK_DEPLOYMENT_CHANNEL"] = $_ENV["SLACK_TEST_CHANNEL"];
+        $_ENV['SLACK_MOCK'] = "mock";
 
         try {
             $tickets = [
@@ -53,13 +38,13 @@ class SlackIntegrationTest extends TestCase
             self::$slack->sendMessage($message);
 
         }
-        catch (\Exception $e)
+        catch (\Throwable $e)
         {
             self::fail("Threw Exception. ".$e->getMessage());
         }
         finally
         {
-            $_ENV["SLACK_DEPLOYMENT_CHANNEL"] = $env;
+            $_ENV["SLACK_MOCK"] = null;
         }
     }
 }

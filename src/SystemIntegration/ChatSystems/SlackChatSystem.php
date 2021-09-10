@@ -9,6 +9,7 @@ use Symfony\Component\Notifier\Bridge\Slack\SlackOptions;
 use Symfony\Component\Notifier\Bridge\Slack\SlackTransport;
 use Symfony\Component\Notifier\Chatter;
 use Symfony\Component\Notifier\Message\ChatMessage;
+use Symfony\Component\Notifier\Transport\NullTransport;
 
 class SlackChatSystem extends ChatSystem
 {
@@ -62,8 +63,13 @@ class SlackChatSystem extends ChatSystem
 
         $accessToken = $_ENV[self::ACCESS_TOKEN_ENV];
         $channel = $_ENV[self::CHANNEL_ENV];
-
         $transport = new SlackTransport($accessToken, $channel);
+
+        if (!empty($_ENV['SLACK_MOCK']) && "mock" === $_ENV['SLACK_MOCK'])
+        {
+            $transport = new NullTransport();
+        }
+
         return new Chatter($transport);
     }
 }
