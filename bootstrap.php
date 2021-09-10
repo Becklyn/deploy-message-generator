@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-require \dirname(__DIR__) . '/vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
 // populate $_ENV with all real environment variables as they are somehow not set by default
 foreach (\getenv() as $k => $v)
