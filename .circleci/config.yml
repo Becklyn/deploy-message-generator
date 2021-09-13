@@ -42,6 +42,10 @@ jobs:
             -   run:
                     name: PHPUnit
                     command: ./vendor/bin/simple-phpunit -c phpunit.xml.dist --colors=always --testdox
+            # phpstan (needs to run after simple-phpunit, as it needs the installed phpunit)
+            -   run:
+                    name: PhpStan
+                    command: ./vendor/bin/phpstan analyse --memory-limit 4G --ansi -c vendor-bin/test/vendor/becklyn/php-cs/phpstan/lib.neon . --no-interaction --no-progress
 
 workflows:
     version: 2
