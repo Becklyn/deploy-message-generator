@@ -1,4 +1,3 @@
-#!/usr/bin/env php
 <?php declare(strict_types=1);
 
 // Manually bootstrap to ensure all environment variables can be read correctly

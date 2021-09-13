@@ -31,6 +31,6 @@
     },
     "minimum-stability": "stable",
     "bin": [
-        "./src/BecklynDeployMessageGenerator.php"
+        "bin/deploy-message-generator"
     ]
 }
