@@ -23,7 +23,7 @@ class GitVersionControlSystem extends VersionControlSystem
         $process = new Process(["git", "log", $commitRange]);
         $exitcode = $process->run();
 
-        if (0 !== $exitcode) {
+        if ($process->isSuccessful()) {
             $this->io->error("Cannot fetch the changelog from commit range \"{$commitRange}\"");
 
             throw new \Exception($process->getErrorOutput(), $exitcode);
