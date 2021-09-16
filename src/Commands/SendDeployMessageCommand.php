@@ -21,6 +21,10 @@ class SendDeployMessageCommand extends Command
     private const DEPLOY_STATUS_ARG_NAME = "deployment-status";
     protected static $defaultName = "deployment:send-message";
 
+
+    /**
+     * @inheritDoc
+     */
     protected function configure () : void
     {
         parent::configure();
