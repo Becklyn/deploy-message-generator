@@ -17,8 +17,8 @@ use Symfony\Component\Process\Process;
 
 class SendDeployMessageCommand extends Command
 {
-    protected const COMMIT_RANGE_ARG_NAME = "commit-range";
-    protected const DEPLOY_STATUS_ARG_NAME = "deployment-status";
+    private const COMMIT_RANGE_ARG_NAME = "commit-range";
+    private const DEPLOY_STATUS_ARG_NAME = "deployment-status";
     protected static $defaultName = "deployment:send-message";
 
     protected function configure () : void
