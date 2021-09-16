@@ -165,7 +165,7 @@ class SendDeployMessageCommand extends Command
 
         if (empty($composer["name"]))
         {
-            $io->info("Cannot read name from composer.json");
+            $io->error("Cannot read name from composer.json");
             throw new \Exception();
         }
 
