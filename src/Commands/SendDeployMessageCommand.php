@@ -33,6 +33,10 @@ class SendDeployMessageCommand extends Command
         $this->setHelp("This command searches for all tickets that were deployed and creates a deploy message for them.");
     }
 
+
+    /**
+     * @inheritDoc
+     */
     protected function execute (InputInterface $input, OutputInterface $output) : int
     {
         $io = new SymfonyStyle($input, $output);
