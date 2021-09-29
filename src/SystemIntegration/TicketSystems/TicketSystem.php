@@ -2,23 +2,23 @@
 
 namespace Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems;
 
+use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
 use Becklyn\DeployMessageGenerator\SystemIntegration\SystemIntegration;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 abstract class TicketSystem implements SystemIntegration
 {
     protected SymfonyStyle $io;
+    protected array $context;
+    protected DeployMessageGeneratorConfig $config;
 
 
-    public function __construct (SymfonyStyle $io)
+    public function __construct (SymfonyStyle $io, array $context, DeployMessageGeneratorConfig $config)
     {
+        $this->config = $config;
+        $this->context = $context;
         $this->io = $io;
     }
-
-    /**
-     * The names for the deployment status that are recognised as production systems
-     */
-    protected const PRODUCTION_STATUS_NAMES = ["live", "production"];
 
     /**
      * Fetches the ticket infos of the ticket with the given id.
@@ -42,18 +42,15 @@ abstract class TicketSystem implements SystemIntegration
      */
     final public function changeDeploymentStatus(string $id, ?string $deploymentStatus) : void
     {
-        $currentDeploymentStatus = $this->getDeploymentStatus($id);
+        $deploymentStatus = $this->config->getDeploymentEnvironmentFor($deploymentStatus);
 
-        $isDeployedToProduction = \in_array(\strtolower($currentDeploymentStatus), self::PRODUCTION_STATUS_NAMES, true);
-        $wantToDeployProduction = \in_array(\strtolower($deploymentStatus), self::PRODUCTION_STATUS_NAMES, true);
-
-        if ($isDeployedToProduction && !$wantToDeployProduction) {
-            $this->io->warning("Cannot set deployment status to {$deploymentStatus} after it was deployed to Production");
-            return;
+        if (!empty($deploymentStatus) && !$this->config->isValidDeploymentStatus($deploymentStatus))
+        {
+            throw new \InvalidArgumentException("The deployment status \"{$deploymentStatus}\" is invalid. Is it defined in the configuration file \".deploy-message-generator.yaml\"?");
         }
 
         $this->setDeploymentStatus($id, $deploymentStatus);
-        $status = empty($deploymentStatus) ? 'null' : $deploymentStatus;
+        $status = empty($deploymentStatus) ? "null" : $deploymentStatus;
         $this->io->info("Deployment staus for {$id} was set to {$status}");
     }
 

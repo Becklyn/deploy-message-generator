@@ -2,7 +2,9 @@
 
 namespace Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems;
 
+use Becklyn\DeployMessageGenerator\Exception\IOException;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\Notifier\Exception\TransportException;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
@@ -11,7 +13,8 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 
 class JiraTicketSytem extends TicketSystem
 {
-    private ?String $deploymentFieldName;
+    private ?String $deploymentFieldName = null;
+
     /**
      * @inheritDoc
      */
@@ -26,15 +29,14 @@ class JiraTicketSytem extends TicketSystem
      */
     public function getTicketInfo (string $id) : TicketInfo
     {
-        if (!isset($_ENV["JIRA_DOMAIN"]))
+        if (!isset($this->config->getConfigFor($this->getName())['domain']))
         {
-            $this->io->error("Cannot read environment variable JIRA_DOMAIN. Is it set?");
-            throw new \Exception();
+            throw new IOException("Cannot read configuration variable jira.domain. Is it set?");
         }
 
         try
         {
-            $baseUrl = $_ENV["JIRA_DOMAIN"];
+            $baseUrl = $this->config->getConfigFor($this->getName())['domain'];
 
             $response = $this->sendRequest("GET", "https://{$baseUrl}/rest/api/2/issue/{$id}?fields=summary");
             $data = \json_decode($response->getContent(), true, 512, \JSON_THROW_ON_ERROR);
@@ -46,9 +48,7 @@ class JiraTicketSytem extends TicketSystem
         }
         catch (\Throwable $e)
         {
-            echo $e;
-            $this->io->error("Failed to make request to Jira");
-            throw new \Exception();
+            throw new \Exception("Failed to make request to Jira", 1, $e);
         }
     }
 
@@ -58,15 +58,14 @@ class JiraTicketSytem extends TicketSystem
      */
     public function getDeploymentStatus (string $id) : string
     {
-        if (!isset($_ENV["JIRA_DOMAIN"]))
+        if (!isset($this->config->getConfigFor($this->getName())['domain']))
         {
-            $this->io->error("Cannot read environment variable JIRA_DOMAIN. Is it set?");
-            throw new \Exception();
+            throw new IOException('Cannot read configuration variable jira.domain. Is it set?');
         }
 
         try
         {
-            $baseUrl = $_ENV["JIRA_DOMAIN"];
+            $baseUrl = $this->config->getConfigFor($this->getName())['domain'];
             $fieldId = $this->getDeploymentStatusFieldName();
 
             $response = $this->sendRequest("GET", "https://{$baseUrl}/rest/api/2/issue/{$id}?fields={$fieldId}");
@@ -81,9 +80,7 @@ class JiraTicketSytem extends TicketSystem
 
             return $status;
         } catch (\Throwable $e) {
-            echo $e;
-            $this->io->error("Failed to make request to Jira");
-            throw new \Exception();
+            throw new \Exception("Failed to make request to Jira", 1, $e);
         }
     }
 
@@ -94,23 +91,23 @@ class JiraTicketSytem extends TicketSystem
             return $this->deploymentFieldName;
         }
 
-        if (!isset($_ENV["JIRA_DEPLOYMENT_STATUS_FIELD"]))
+        if (!isset($this->config->getConfigFor($this->getName())['field']))
         {
-            $this->io->warning("Cannot read environment variable JIRA_DEPLOYMENT_STATUS_FIELD.");
+            $this->io->warning("Cannot read configuration variable jira.field");
             return null;
         }
 
         try
         {
-            $baseUrl = $_ENV["JIRA_DOMAIN"];
-            $fieldName = $_ENV["JIRA_DEPLOYMENT_STATUS_FIELD"];
+            $baseUrl = $this->config->getConfigFor($this->getName())['domain'];
+            $fieldName = $this->config->getConfigFor($this->getName())['field'];
 
             $fieldEndpointResponse = $this->sendRequest("GET", "https://{$baseUrl}/rest/api/2/field");
             $fields = \json_decode($fieldEndpointResponse->getContent(), true, 512, \JSON_THROW_ON_ERROR);
 
             foreach ($fields as $field)
             {
-                if (isset($field["name"]) && $fieldName === $field["name"] || isset($field['untranslatedName']) && $fieldName === $field["untranslatedName"])
+                if (isset($field["name"]) && $fieldName === $field["name"] || isset($field["untranslatedName"]) && $fieldName === $field["untranslatedName"])
                 {
                     $this->deploymentFieldName = $field["key"];
                     return $this->deploymentFieldName;
@@ -119,9 +116,7 @@ class JiraTicketSytem extends TicketSystem
 
             return null;
         } catch (\Throwable $e) {
-            echo $e;
-            $this->io->error("Failed to make request to Jira");
-            throw new \Exception();
+            throw new \Exception("Failed to make request to Jira", 1, $e);
         }
     }
 
@@ -133,15 +128,13 @@ class JiraTicketSytem extends TicketSystem
      */
     protected function sendRequest(string $method, string $endpoint, array $options = []) : ResponseInterface
     {
-        if (!isset($_ENV["JIRA_USER"]) || !isset($_ENV["JIRA_ACCESS_TOKEN"]))
+        if (!isset($this->context["JIRA_USER"]) || !isset($this->context["JIRA_ACCESS_TOKEN"]))
         {
-            $this->io->error("Cannot read environment variables JIRA_USER and JIRA_ACCESS_TOKEN. Are they set?");
-            throw new \Exception();
+            throw new IOException("Cannot read environment variables JIRA_USER and JIRA_ACCESS_TOKEN. Are they set?");
         }
 
-
-        $user = $_ENV["JIRA_USER"];
-        $token = $_ENV["JIRA_ACCESS_TOKEN"];
+        $user = $this->context["JIRA_USER"];
+        $token = $this->context["JIRA_ACCESS_TOKEN"];
 
         $authorizationCode = \base64_encode("{$user}:{$token}");
         $client = HttpClient::create([
@@ -155,8 +148,7 @@ class JiraTicketSytem extends TicketSystem
 
         if (isset($response->getHeaders(false)["X-Seraph-LoginReason"]) && "AUTHENTICATION_DENIED" === $response->getHeaders(false)["X-Seraph-LoginReason"][0])
         {
-            $this->io->error("Cannot make API call to Jira. Captcha required");
-            throw new \Exception();
+            throw new \Exception("Cannot make API call to Jira. Captcha required");
         }
 
         return $response;
@@ -167,15 +159,14 @@ class JiraTicketSytem extends TicketSystem
      */
     protected function setDeploymentStatus (string $id, ?string $deploymentStatus) : void
     {
-        if (!isset($_ENV["JIRA_DOMAIN"]))
+        if (!isset($this->config->getConfigFor($this->getName())['domain']))
         {
-            $this->io->error("Cannot read environment variable JIRA_DOMAIN. Is it set?");
-            throw new \Exception();
+            throw new IOException("Cannot read configuration variable jira.domain. Is it set?");
         }
 
         try
         {
-            $baseUrl = $_ENV["JIRA_DOMAIN"];
+            $baseUrl = $this->config->getConfigFor($this->getName())['domain'];
             $fieldId = $this->getDeploymentStatusFieldName();
             $status = null;
 
@@ -197,15 +188,12 @@ class JiraTicketSytem extends TicketSystem
             $response = $this->sendRequest("PUT", "https://{$baseUrl}/rest/api/2/issue/{$id}", $data);
 
             if (204 !== $response->getStatusCode()) {
-                echo $response->getContent();
-                throw new \Exception();
+                throw new TransportException($response->getContent(false), $response, 1);
             }
         }
         catch (\Throwable $e)
         {
-            echo $e;
-            $this->io->error("Failed to make request to Jira");
-            throw new \Exception();
+            throw new \Exception("Failed to make request to Jira", 1, $e);
         }
     }
 
