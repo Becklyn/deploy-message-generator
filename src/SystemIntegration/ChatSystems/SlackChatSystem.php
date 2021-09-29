@@ -2,6 +2,7 @@
 
 namespace Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems;
 
+use Becklyn\DeployMessageGenerator\Exception\IOException;
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketInfo;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackDividerBlock;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackSectionBlock;
@@ -14,8 +15,11 @@ use Symfony\Component\Notifier\Transport\NullTransport;
 class SlackChatSystem extends ChatSystem
 {
     private const ACCESS_TOKEN_ENV = "SLACK_ACCESS_TOKEN";
-    private const CHANNEL_ENV = "SLACK_DEPLOYMENT_CHANNEL";
 
+
+    /**
+     * @inheritdoc
+     */
     public function getChatMessage (array $tickets, string $deploymentStatus, string $project) : ChatMessage
     {
         $message = (new ChatMessage("Deployment Info"))->transport("slack");
@@ -55,17 +59,21 @@ class SlackChatSystem extends ChatSystem
 
     protected function getChatter () : Chatter
     {
-        if (!isset($_ENV[self::ACCESS_TOKEN_ENV]) || !isset($_ENV[self::CHANNEL_ENV]))
+        if (!isset($this->context[self::ACCESS_TOKEN_ENV]))
         {
-            $this->io->error(\sprintf("Cannot read required environment variables. Are %s and %s defined?", self::ACCESS_TOKEN_ENV, self::CHANNEL_ENV));
-            throw new \Exception();
+            throw new IOException("Cannot read required environment " . self::ACCESS_TOKEN_ENV);
         }
 
-        $accessToken = $_ENV[self::ACCESS_TOKEN_ENV];
-        $channel = $_ENV[self::CHANNEL_ENV];
+        if (!isset($this->config->getConfigFor($this->getName())['channel']))
+        {
+            throw new IOException("Cannot read configuration variable slack.channel");
+        }
+
+        $accessToken = $this->context[self::ACCESS_TOKEN_ENV];
+        $channel = $this->config->getConfigFor($this->getName())['channel'];
         $transport = new SlackTransport($accessToken, $channel);
 
-        if (!empty($_ENV['SLACK_MOCK']) && "mock" === $_ENV['SLACK_MOCK'])
+        if (!empty($this->context["SLACK_MOCK"]) && "mock" === $this->context["SLACK_MOCK"])
         {
             $transport = new NullTransport();
         }

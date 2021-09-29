@@ -2,6 +2,7 @@
 
 namespace Tests\Becklyn\DeployMessageGenerator\SystemIntegrations\ChatSystems;
 
+use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
 use Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems\SlackChatSystem;
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketInfo;
 use PHPUnit\Framework\TestCase;
@@ -17,7 +18,8 @@ class SlackIntegrationTest extends TestCase
     {
         parent::setUpBeforeClass();
         $io = new SymfonyStyle(new StringInput(""), new ConsoleOutput());
-        self::$slack = new SlackChatSystem($io);
+        $context = ['SLACK_MOCK' => 'mock'] + $_SERVER + $_ENV;
+        self::$slack = new SlackChatSystem($io, $context, new DeployMessageGeneratorConfig(\dirname(__DIR__, 3)));
     }
 
 
@@ -26,8 +28,6 @@ class SlackIntegrationTest extends TestCase
      */
     public function testMessageSending () : void
     {
-        $_ENV['SLACK_MOCK'] = "mock";
-
         try {
             $tickets = [
                 new TicketInfo("FOO-1", "Goto google.com", "https://google.com"),
@@ -41,10 +41,6 @@ class SlackIntegrationTest extends TestCase
         catch (\Throwable $e)
         {
             self::fail("Threw Exception. ".$e->getMessage());
-        }
-        finally
-        {
-            $_ENV["SLACK_MOCK"] = null;
         }
     }
 }
