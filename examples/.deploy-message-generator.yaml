@@ -1,0 +1,26 @@
+name: "deploy-message-generator"
+
+# Which system to use
+vcs: "git"
+ticket-system: "jira"
+chat-system: "slack"
+
+# Custom configuration for jira system
+jira:
+    domain: "foo.atlassian.net"
+    field: "Deployment Status"
+
+# Custom configuration for slack system
+slack:
+    channel: "ABCD1234"
+
+# The allowed environments as environment => [aliases].
+# The case of the environments will be transformed to PascalCase / capitalized CamelCase
+server:
+    production:
+        - prod
+        - live
+    staging:
+        - stage
+        - test
+    integration:
