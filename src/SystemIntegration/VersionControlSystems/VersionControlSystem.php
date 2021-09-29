@@ -2,15 +2,22 @@
 
 namespace Becklyn\DeployMessageGenerator\SystemIntegration\VersionControlSystems;
 
+use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
 use Becklyn\DeployMessageGenerator\SystemIntegration\SystemIntegration;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 abstract class VersionControlSystem implements SystemIntegration
 {
     protected SymfonyStyle $io;
+    protected array $context;
 
-    public function __construct (SymfonyStyle $io)
+    protected DeployMessageGeneratorConfig $config;
+
+
+    public function __construct (SymfonyStyle $io, array $context, DeployMessageGeneratorConfig $config)
     {
+        $this->config = $config;
+        $this->context = $context;
         $this->io = $io;
     }
 
