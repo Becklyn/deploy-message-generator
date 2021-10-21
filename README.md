@@ -21,6 +21,7 @@ These variables can also be defined by placing `.deploy-message-generator.env` i
 | JIRA_USER                | The user used to lookup the ticket information                                                                           |
 | JIRA_ACCESS_TOKEN        | The access token for the `JIRA_USER`                                                                                     | 
 
+
 Configuration
 -------------
 
