@@ -31,7 +31,7 @@ class SendDeployMessageRunner
 
         if (!$config->isValidDeploymentStatus($deploymentStatus))
         {
-            throw new \InvalidArgumentException("\"{$deploymentStatus}\" is not a valid environment. Did you configure it in the \".deploy-message-generator.yaml\" file?");
+            throw new \InvalidArgumentException("Invalid environment '{$deploymentStatus}' received. Did you forget to configure it in the \".deploy-message-generator.yaml\" file?");
         }
 
 
@@ -58,7 +58,7 @@ class SendDeployMessageRunner
         // Interactive mode and no explicit flag to send message => ask
         if ($this->context[SendDeployMessageCommand::NON_INTERACTIVE_FLAG_NAME] && !$shouldSendMessageViaChatSystem)
         {
-            $question = new ConfirmationQuestion("Should the deployment message be sent using {$chatSystem->getName()}?", false);
+            $question = new ConfirmationQuestion("Send deployment message be via {$chatSystem->getName()}?", false);
             $shouldSendMessageViaChatSystem = $this->io->askQuestion($question);
         }
 
@@ -95,7 +95,7 @@ class SendDeployMessageRunner
 
         foreach ($ticketInfos as $ticketInfo)
         {
-            // Markdown: " - [JIRA-101](jira.com/browser/WALD-101) Some ticket"
+            // Markdown: " - [JIRA-101](jira.com/browser/JIRA-101) Some ticket"
             $mdMessage .= " - [{$ticketInfo->getId()}]({$ticketInfo->getUrl()}) {$ticketInfo->getTitle()}" . \PHP_EOL;
         }
 

@@ -49,7 +49,7 @@ class DeployMessageGeneratorConfig
     {
         if (!isset($this->config["name"]))
         {
-            throw new FormatException("\"name\" is not defined in \"{$this->file}\"");
+            throw new FormatException("The key \"name\" is not defined in the project's config file in \"{$this->file}\".");
         }
         return $this->config["name"];
     }

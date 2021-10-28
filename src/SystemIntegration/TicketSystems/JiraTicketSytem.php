@@ -29,20 +29,21 @@ class JiraTicketSytem extends TicketSystem
      */
     public function getTicketInfo (string $id) : TicketInfo
     {
-        if (!isset($this->config->getConfigFor($this->getName())['domain']))
+        $jiraConfig = $this->config->getConfigFor($this->getName());
+        $domain = $jiraConfig['domain'] ?? null;
+
+        if (null === $domain)
         {
             throw new IOException("Cannot read configuration variable jira.domain. Is it set?");
         }
 
         try
         {
-            $baseUrl = $this->config->getConfigFor($this->getName())['domain'];
-
-            $response = $this->sendRequest("GET", "https://{$baseUrl}/rest/api/2/issue/{$id}?fields=summary");
-            $data = \json_decode($response->getContent(), true, 512, \JSON_THROW_ON_ERROR);
+            $response = $this->sendRequest("GET", "https://{$domain}/rest/api/2/issue/{$id}?fields=summary");
+            $data = $response->toArray();
 
             $title = $data["fields"]["summary"];
-            $url = "https://{$baseUrl}/browse/{$id}";
+            $url = "https://{$domain}/browse/{$id}";
 
             return new TicketInfo($id, $title, $url);
         }
@@ -107,7 +108,7 @@ class JiraTicketSytem extends TicketSystem
 
             foreach ($fields as $field)
             {
-                if (isset($field["name"]) && $fieldName === $field["name"] || isset($field["untranslatedName"]) && $fieldName === $field["untranslatedName"])
+                if (fieldName === ($field["name"] ?? null) || $fieldName === ($field["untranslatedName"] ?? null))
                 {
                     $this->deploymentFieldName = $field["key"];
                     return $this->deploymentFieldName;
@@ -146,7 +147,7 @@ class JiraTicketSytem extends TicketSystem
 
         $response = $client->request($method, $endpoint, $options);
 
-        if (isset($response->getHeaders(false)["X-Seraph-LoginReason"]) && "AUTHENTICATION_DENIED" === $response->getHeaders(false)["X-Seraph-LoginReason"][0])
+        if ("AUTHENTICATION_DENIED" === ($response->getHeaders(false)["X-Seraph-LoginReason"][0] ?? null))
         {
             throw new \Exception("Cannot make API call to Jira. Captcha required");
         }

@@ -61,7 +61,7 @@ class SlackChatSystem extends ChatSystem
     {
         if (!isset($this->context[self::ACCESS_TOKEN_ENV]))
         {
-            throw new IOException("Cannot read required environment " . self::ACCESS_TOKEN_ENV);
+            throw new IOException("Failed to send Slack message due to missing required environment variable '" . self::ACCESS_TOKEN_ENV . "'.");
         }
 
         if (!isset($this->config->getConfigFor($this->getName())['channel']))
