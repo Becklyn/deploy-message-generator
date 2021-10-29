@@ -2,6 +2,6 @@
 
 namespace Becklyn\DeployMessageGenerator\Exception;
 
-class FileNotFoundException extends \Exception
+class FileNotFoundException extends IOException
 {
 }

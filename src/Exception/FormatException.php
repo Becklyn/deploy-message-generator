@@ -2,6 +2,6 @@
 
 namespace Becklyn\DeployMessageGenerator\Exception;
 
-class FormatException extends \Exception
+class FormatException extends \RuntimeException
 {
 }

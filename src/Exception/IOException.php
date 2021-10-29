@@ -2,6 +2,6 @@
 
 namespace Becklyn\DeployMessageGenerator\Exception;
 
-class IOException extends \Exception
+class IOException extends \RuntimeException
 {
 }

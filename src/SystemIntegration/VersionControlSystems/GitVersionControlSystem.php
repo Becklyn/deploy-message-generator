@@ -21,10 +21,10 @@ class GitVersionControlSystem extends VersionControlSystem
     protected function getChangelogFromCommitRange (string $commitRange) : string
     {
         $process = new Process(["git", "log", $commitRange]);
-        $exitcode = $process->run();
+        $process->run();
 
-        if ($process->isSuccessful()) {
-            throw new \Exception("Cannot fetch the changelog from commit range \"{$commitRange}\". {$process->getErrorOutput()}", $exitcode);
+        if (!$process->isSuccessful()) {
+            throw new \Exception("Cannot fetch the changelog from commit range \"{$commitRange}\". {$process->getErrorOutput()}");
         }
 
         return $process->getOutput();
