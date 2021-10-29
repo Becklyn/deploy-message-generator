@@ -141,7 +141,7 @@ class SendDeployMessageRunner
                 throw new \Exception();
         }
 
-        $process = new Process(["echo", "'{$message}'", "|", $executable]);
+        $process = new Process(["echo", \escapeshellarg($message), " |", $executable]);
         $process->run();
 
         if (!$process->isSuccessful())
