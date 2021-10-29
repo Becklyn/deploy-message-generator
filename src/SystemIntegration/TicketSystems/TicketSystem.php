@@ -3,20 +3,19 @@
 namespace Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems;
 
 use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
+use Becklyn\DeployMessageGenerator\Exception\InvalidDeploymentEnvironmentException;
 use Becklyn\DeployMessageGenerator\SystemIntegration\SystemIntegration;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 abstract class TicketSystem implements SystemIntegration
 {
     protected SymfonyStyle $io;
-    protected array $context;
     protected DeployMessageGeneratorConfig $config;
 
 
-    public function __construct (SymfonyStyle $io, array $context, DeployMessageGeneratorConfig $config)
+    public function __construct (SymfonyStyle $io, DeployMessageGeneratorConfig $config)
     {
         $this->config = $config;
-        $this->context = $context;
         $this->io = $io;
     }
 
@@ -39,19 +38,22 @@ abstract class TicketSystem implements SystemIntegration
 
     /**
      * Checks if the deployment status may be changed before attempting to change it.
+     * Passing null as deploymentStatus Argument will unset the deployment status.
      */
     final public function changeDeploymentStatus(string $id, ?string $deploymentStatus) : void
     {
-        $deploymentStatus = $this->config->getDeploymentEnvironmentFor($deploymentStatus);
-
-        if (!empty($deploymentStatus) && !$this->config->isValidDeploymentStatus($deploymentStatus))
+        if (null !== $deploymentStatus)
         {
-            throw new \InvalidArgumentException("The deployment status \"{$deploymentStatus}\" is invalid. Is it defined in the configuration file \".deploy-message-generator.yaml\"?");
+            $deploymentStatus = $this->config->getDeploymentEnvironmentFor($deploymentStatus);
+
+            if (!$this->config->isValidDeploymentStatus($deploymentStatus)) {
+                throw new InvalidDeploymentEnvironmentException($deploymentStatus, $this->config);
+            }
         }
 
         $this->setDeploymentStatus($id, $deploymentStatus);
         $status = empty($deploymentStatus) ? "null" : $deploymentStatus;
-        $this->io->info("Deployment staus for {$id} was set to {$status}");
+        $this->io->info("Deployment status for {$id} was set to {$status}");
     }
 
 
