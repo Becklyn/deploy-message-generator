@@ -4,6 +4,7 @@ namespace Becklyn\DeployMessageGenerator\Runner;
 
 use Becklyn\DeployMessageGenerator\Commands\SendDeployMessageCommand;
 use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
+use Becklyn\DeployMessageGenerator\Exception\InvalidDeploymentEnvironmentException;
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketInfo;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -31,7 +32,7 @@ class SendDeployMessageRunner
 
         if (!$config->isValidDeploymentStatus($deploymentStatus))
         {
-            throw new \InvalidArgumentException("Invalid environment '{$deploymentStatus}' received. Did you forget to configure it in the \".deploy-message-generator.yaml\" file?");
+            throw new InvalidDeploymentEnvironmentException($deploymentStatus, $config);
         }
 
 
@@ -54,11 +55,12 @@ class SendDeployMessageRunner
         }
 
         $shouldSendMessageViaChatSystem = $this->context[SendDeployMessageCommand::SEND_MESSAGE_FLAG_NAME];
+        $shouldCopyMessageToClipboard = $this->context[SendDeployMessageCommand::COPY_MESSAGE_FLAG_NAME];
 
-        // Interactive mode and no explicit flag to send message => ask
-        if ($this->context[SendDeployMessageCommand::NON_INTERACTIVE_FLAG_NAME] && !$shouldSendMessageViaChatSystem)
+        // Interactive mode and no explicit flag whether to send or copy the message
+        if (!$this->context[SendDeployMessageCommand::NON_INTERACTIVE_FLAG_NAME] && !$shouldSendMessageViaChatSystem && !$shouldCopyMessageToClipboard)
         {
-            $question = new ConfirmationQuestion("Send deployment message be via {$chatSystem->getName()}?", false);
+            $question = new ConfirmationQuestion("Should the deployment message be sent using {$chatSystem->getName()}?", false);
             $shouldSendMessageViaChatSystem = $this->io->askQuestion($question);
         }
 
@@ -71,7 +73,7 @@ class SendDeployMessageRunner
             }
             catch (TransportExceptionInterface $e)
             {
-                $this->io->error("Could not send deploy message due. Generating message for copy/paste...");
+                $this->io->error("Could not send deploy message due to a transport error. Generating message for copy/paste...");
                 $this->generateMessageForCopyPaste($tickets, $project, $deploymentStatus);
             }
         }
@@ -95,8 +97,12 @@ class SendDeployMessageRunner
 
         foreach ($ticketInfos as $ticketInfo)
         {
-            // Markdown: " - [JIRA-101](jira.com/browser/JIRA-101) Some ticket"
+            // Markdown: " - [JIRA-101](jira.com/browser/WALD-101) Some ticket"
             $mdMessage .= " - [{$ticketInfo->getId()}]({$ticketInfo->getUrl()}) {$ticketInfo->getTitle()}" . \PHP_EOL;
+        }
+
+        if (empty($ticketInfos)) {
+            $mdMessage .= "No ticket information available";
         }
 
         try
@@ -134,7 +140,8 @@ class SendDeployMessageRunner
             default:
                 throw new \Exception();
         }
-        $process = new Process(["echo", $message, "|", $executable]);
+
+        $process = new Process(["echo", "'{$message}'", "|", $executable]);
         $process->run();
 
         if (!$process->isSuccessful())
