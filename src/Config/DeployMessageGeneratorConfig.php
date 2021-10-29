@@ -4,6 +4,7 @@ namespace Becklyn\DeployMessageGenerator\Config;
 
 use Becklyn\DeployMessageGenerator\Exception\FileNotFoundException;
 use Becklyn\DeployMessageGenerator\Exception\FormatException;
+use Becklyn\DeployMessageGenerator\Exception\IOException;
 use Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems\ChatSystem;
 use Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems\SlackChatSystem;
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\JiraTicketSytem;
@@ -58,26 +59,36 @@ class DeployMessageGeneratorConfig
     public function getTicketSystem (SymfonyStyle $io, array $context) : TicketSystem
     {
         $systemName = $this->config["ticket-system"] ?? "jira";
+        $serviceConfig = $this->config[$systemName] ?? null;
 
-        if (isset($this->config[$systemName]))
-        {
-            $context[$systemName] = $this->config[$systemName];
+        if (empty($serviceConfig['domain'])) {
+            throw new IOException('Configuration variable jira.domain is not set');
         }
 
-        return new JiraTicketSytem($io, $context, $this);
+        if (empty($serviceConfig['field'])) {
+            throw new IOException('Configuration variable jira.field is not set');
+        }
+
+        if (empty($context['JIRA_USER'])) {
+            throw new IOException('Environment variable JIRA_USER is not set');
+        }
+
+        if (empty($context['JIRA_ACCESS_TOKEN'])) {
+            throw new IOException('Environment variable JIRA_ACCESS_TOKEN is not set');
+        }
+
+        $domain = $serviceConfig['domain'];
+        $deploymentField = $serviceConfig['field'];
+        $jiraUser = $context['JIRA_USER'];
+        $jiraAccessToken = $context['JIRA_ACCESS_TOKEN'];
+
+        return new JiraTicketSytem($io, $this, $deploymentField, $domain, $jiraUser, $jiraAccessToken);
     }
 
 
     public function getVersionControlSystem (SymfonyStyle $io, array $context) : VersionControlSystem
     {
-        $systemName = $this->config["vcs"] ?? "git";
-
-        if (isset($this->config[$systemName]))
-        {
-            $context[$systemName] = $this->config[$systemName];
-        }
-
-        return new GitVersionControlSystem($io, $context, $this);
+        return new GitVersionControlSystem($io);
     }
 
 
@@ -85,12 +96,20 @@ class DeployMessageGeneratorConfig
     {
         $systemName = $this->config["chat-system"] ?? "slack";
 
-        if (isset($this->config[$systemName]))
-        {
-            $context[$systemName] = $this->config[$systemName];
+        $serviceConfig = $this->config[$systemName] ?? null;
+
+        if (empty($serviceConfig['channel'])) {
+            throw new IOException('Configuration variable slack.channel is not set');
         }
 
-        return new SlackChatSystem($io, $context, $this);
+        if (empty($context['SLACK_ACCESS_TOKEN'])) {
+            throw new IOException('Environment variable SLACK_ACCESS_TOKEN is not set');
+        }
+
+        $channel = $serviceConfig['channel'];
+        $token = $context['SLACK_ACCESS_TOKEN'];
+
+        return new SlackChatSystem($io, $token, $channel);
     }
 
 
@@ -108,41 +127,62 @@ class DeployMessageGeneratorConfig
     }
 
 
-    public function isValidDeploymentStatus (string $deploymentStatus) : bool
+    public function isValidDeploymentStatus (?string $deploymentStatus) : bool
     {
         return null !== $this->getDeploymentEnvironmentFor($deploymentStatus);
     }
 
-    public function getDeploymentEnvironmentFor (string $environmentOrAlias) : ?string
+    public function getDeploymentEnvironmentFor (?string $environmentOrAlias) : ?string
     {
+        if (null === $environmentOrAlias) {
+            return null;
+        }
+
         if (empty(self::$environments))
         {
-            foreach ($this->config["server"] as $environment => $aliases)
-            {
-                $environment = u($environment)->camel()->title()->toString();
-                self::$environments[$environment] = $environment;
-
-                if (empty($aliases))
-                {
-                    continue;
-                }
-
-                foreach ($aliases as $alias)
-                {
-                    $alias = u($alias)->camel()->title()->toString();
-                    self::$environments[$alias] = $environment;
-                }
-
-            }
+            $this->fetchEnvironments();
         }
 
         $environmentOrAlias = u($environmentOrAlias)->camel()->title()->toString();
 
-        if (isset(self::$environments[$environmentOrAlias]))
+        if (!empty(self::$environments[$environmentOrAlias]))
         {
             return self::$environments[$environmentOrAlias];
         }
 
         return null;
+    }
+
+
+    public function getAllEnvironments () : array
+    {
+        if (empty(self::$environments))
+        {
+            $this->fetchEnvironments();
+        }
+
+        return \array_keys(self::$environments);
+    }
+
+
+    private function fetchEnvironments () : void
+    {
+        foreach ($this->config['server'] as $environment => $aliases)
+        {
+            $environment = u($environment)->camel()->title()->toString();
+            self::$environments[$environment] = $environment;
+
+            if (empty($aliases))
+            {
+                continue;
+            }
+
+            foreach ($aliases as $alias)
+            {
+                $alias = u($alias)->camel()->title()->toString();
+                self::$environments[$alias] = $environment;
+            }
+
+        }
     }
 }
