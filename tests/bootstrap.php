@@ -30,4 +30,5 @@ return function (array $context)
         $context += $_ENV;
         return $context;
     }
+    return $context;
 };
