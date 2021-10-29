@@ -4,7 +4,7 @@ use Becklyn\DeployMessageGenerator\Commands\SendDeployMessageCommand;
 use Composer\InstalledVersions;
 use Symfony\Component\Console\Application;
 
-require __DIR__ . "/vendor/autoload_runtime.php";
+require \dirname(__DIR__) . "/vendor/autoload_runtime.php";
 
 return function (array $context)
 {
