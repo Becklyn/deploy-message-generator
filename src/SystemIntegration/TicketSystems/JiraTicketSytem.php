@@ -2,7 +2,8 @@
 
 namespace Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems;
 
-use Becklyn\DeployMessageGenerator\Exception\IOException;
+use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Notifier\Exception\TransportException;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
@@ -13,7 +14,27 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 
 class JiraTicketSytem extends TicketSystem
 {
-    private ?String $deploymentFieldName = null;
+    private String $deploymentFieldName;
+    private String $domain;
+
+    private string $jiraUser;
+
+    private string $token;
+
+
+    public function __construct (SymfonyStyle $io, DeployMessageGeneratorConfig $config, string $deploymentFieldName, string $domain, string $jiraUser, string $token)
+    {
+        parent::__construct($io, $config);
+        $this->deploymentFieldName = $deploymentFieldName;
+        $this->domain = $domain;
+        $this->token = $token;
+        $this->jiraUser = $jiraUser;
+
+        if (!$this->isDeploymentStatusFieldNameValid()) {
+            throw new \InvalidArgumentException("The field \"{$deploymentFieldName}\" does not exist for your jira installation.");
+        }
+    }
+
 
     /**
      * @inheritDoc
@@ -29,21 +50,13 @@ class JiraTicketSytem extends TicketSystem
      */
     public function getTicketInfo (string $id) : TicketInfo
     {
-        $jiraConfig = $this->config->getConfigFor($this->getName());
-        $domain = $jiraConfig['domain'] ?? null;
-
-        if (null === $domain)
-        {
-            throw new IOException("Cannot read configuration variable jira.domain. Is it set?");
-        }
-
         try
         {
-            $response = $this->sendRequest("GET", "https://{$domain}/rest/api/2/issue/{$id}?fields=summary");
+            $response = $this->sendRequest("GET", "https://{$this->domain}/rest/api/2/issue/{$id}?fields=summary");
             $data = $response->toArray();
 
             $title = $data["fields"]["summary"];
-            $url = "https://{$domain}/browse/{$id}";
+            $url = "https://{$this->domain}/browse/{$id}";
 
             return new TicketInfo($id, $title, $url);
         }
@@ -59,19 +72,11 @@ class JiraTicketSytem extends TicketSystem
      */
     public function getDeploymentStatus (string $id) : string
     {
-        if (!isset($this->config->getConfigFor($this->getName())['domain']))
-        {
-            throw new IOException('Cannot read configuration variable jira.domain. Is it set?');
-        }
-
         try
         {
-            $baseUrl = $this->config->getConfigFor($this->getName())['domain'];
-            $fieldId = $this->getDeploymentStatusFieldName();
-
-            $response = $this->sendRequest("GET", "https://{$baseUrl}/rest/api/2/issue/{$id}?fields={$fieldId}");
+            $response = $this->sendRequest("GET", "https://{$this->domain}/rest/api/2/issue/{$id}?fields={$this->deploymentFieldName}");
             $data = \json_decode($response->getContent(), true, 512, \JSON_THROW_ON_ERROR);
-            $field = $data["fields"][$fieldId];
+            $field = $data["fields"][$this->deploymentFieldName];
             $status = "";
 
             if (!empty($field["value"]))
@@ -85,37 +90,23 @@ class JiraTicketSytem extends TicketSystem
         }
     }
 
-    protected function getDeploymentStatusFieldName() : ?string
+    protected function isDeploymentStatusFieldNameValid() : bool
     {
-        if (isset($this->deploymentFieldName) && null !== $this->deploymentFieldName)
-        {
-            return $this->deploymentFieldName;
-        }
-
-        if (!isset($this->config->getConfigFor($this->getName())['field']))
-        {
-            $this->io->warning("Cannot read configuration variable jira.field");
-            return null;
-        }
-
         try
         {
-            $baseUrl = $this->config->getConfigFor($this->getName())['domain'];
-            $fieldName = $this->config->getConfigFor($this->getName())['field'];
-
-            $fieldEndpointResponse = $this->sendRequest("GET", "https://{$baseUrl}/rest/api/2/field");
+            $fieldEndpointResponse = $this->sendRequest("GET", "https://{$this->domain}/rest/api/2/field");
             $fields = \json_decode($fieldEndpointResponse->getContent(), true, 512, \JSON_THROW_ON_ERROR);
 
             foreach ($fields as $field)
             {
-                if (fieldName === ($field["name"] ?? null) || $fieldName === ($field["untranslatedName"] ?? null))
+                if ($this->deploymentFieldName === ($field["name"] ?? null) || $this->deploymentFieldName === ($field["untranslatedName"] ?? null))
                 {
                     $this->deploymentFieldName = $field["key"];
-                    return $this->deploymentFieldName;
+                    return true;
                 }
             }
 
-            return null;
+            return false;
         } catch (\Throwable $e) {
             throw new \Exception("Failed to make request to Jira", 1, $e);
         }
@@ -129,15 +120,7 @@ class JiraTicketSytem extends TicketSystem
      */
     protected function sendRequest(string $method, string $endpoint, array $options = []) : ResponseInterface
     {
-        if (!isset($this->context["JIRA_USER"]) || !isset($this->context["JIRA_ACCESS_TOKEN"]))
-        {
-            throw new IOException("Cannot read environment variables JIRA_USER and JIRA_ACCESS_TOKEN. Are they set?");
-        }
-
-        $user = $this->context["JIRA_USER"];
-        $token = $this->context["JIRA_ACCESS_TOKEN"];
-
-        $authorizationCode = \base64_encode("{$user}:{$token}");
+        $authorizationCode = \base64_encode("{$this->jiraUser}:{$this->token}");
         $client = HttpClient::create([
             "headers" => [
                 "Authorization" => "Basic {$authorizationCode}",
@@ -160,15 +143,9 @@ class JiraTicketSytem extends TicketSystem
      */
     protected function setDeploymentStatus (string $id, ?string $deploymentStatus) : void
     {
-        if (!isset($this->config->getConfigFor($this->getName())['domain']))
-        {
-            throw new IOException("Cannot read configuration variable jira.domain. Is it set?");
-        }
 
         try
         {
-            $baseUrl = $this->config->getConfigFor($this->getName())['domain'];
-            $fieldId = $this->getDeploymentStatusFieldName();
             $status = null;
 
             if (!empty($deploymentStatus))
@@ -181,12 +158,12 @@ class JiraTicketSytem extends TicketSystem
             $data = [
                 "json" => [
                     "fields" => [
-                        $fieldId => $status,
+                        $this->deploymentFieldName => $status,
                     ],
                 ],
             ];
 
-            $response = $this->sendRequest("PUT", "https://{$baseUrl}/rest/api/2/issue/{$id}", $data);
+            $response = $this->sendRequest("PUT", "https://{$this->domain}/rest/api/2/issue/{$id}", $data);
 
             if (204 !== $response->getStatusCode()) {
                 throw new TransportException($response->getContent(false), $response, 1);
