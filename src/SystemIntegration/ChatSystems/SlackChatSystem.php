@@ -2,19 +2,29 @@
 
 namespace Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems;
 
-use Becklyn\DeployMessageGenerator\Exception\IOException;
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketInfo;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackDividerBlock;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackSectionBlock;
 use Symfony\Component\Notifier\Bridge\Slack\SlackOptions;
 use Symfony\Component\Notifier\Bridge\Slack\SlackTransport;
 use Symfony\Component\Notifier\Chatter;
 use Symfony\Component\Notifier\Message\ChatMessage;
-use Symfony\Component\Notifier\Transport\NullTransport;
+use Symfony\Component\Notifier\Transport\TransportInterface;
 
 class SlackChatSystem extends ChatSystem
 {
-    private const ACCESS_TOKEN_ENV = "SLACK_ACCESS_TOKEN";
+    private string $token;
+
+    private string $channel;
+
+
+    public function __construct (SymfonyStyle $io, string $token, string $channel)
+    {
+        parent::__construct($io);
+        $this->channel = $channel;
+        $this->token = $token;
+    }
 
 
     /**
@@ -44,6 +54,10 @@ class SlackChatSystem extends ChatSystem
             $markdownList .= "• <{$ticket->getUrl()}|{$ticket->getId()}> {$ticket->getTitle()}  \n";
         }
 
+        if (empty($markdownList)) {
+            return "No ticket information available";
+        }
+
         return $markdownList;
     }
 
@@ -57,26 +71,9 @@ class SlackChatSystem extends ChatSystem
     }
 
 
-    protected function getChatter () : Chatter
+    protected function getChatter (?TransportInterface $transport = null) : Chatter
     {
-        if (!isset($this->context[self::ACCESS_TOKEN_ENV]))
-        {
-            throw new IOException("Failed to send Slack message due to missing required environment variable '" . self::ACCESS_TOKEN_ENV . "'.");
-        }
-
-        if (!isset($this->config->getConfigFor($this->getName())['channel']))
-        {
-            throw new IOException("Cannot read configuration variable slack.channel");
-        }
-
-        $accessToken = $this->context[self::ACCESS_TOKEN_ENV];
-        $channel = $this->config->getConfigFor($this->getName())['channel'];
-        $transport = new SlackTransport($accessToken, $channel);
-
-        if (!empty($this->context["SLACK_MOCK"]) && "mock" === $this->context["SLACK_MOCK"])
-        {
-            $transport = new NullTransport();
-        }
+        $transport = $transport ?? new SlackTransport($this->token, $this->channel);
 
         return new Chatter($transport);
     }
