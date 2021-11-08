@@ -33,18 +33,15 @@ class JiraIntegrationTest extends TestCase
         $bootstrap = require \dirname(__DIR__, 2) . '/bootstrap.php';
         $context = $bootstrap(['APP_ENV' => 'test'] + $_ENV + $_SERVER);
 
-        self::$jiraDomain = $context["JIRA_DOMAIN"];
-        self::$deploymentField = $context["DEPLOYMENT_FIELD"];
-        self::$testTicket = $context["TEST_TICKET"];
-        self::$testTicketTitle = $context["TEST_TICKET_TITLE"];
+        self::$jiraDomain = $context["JIRA_DOMAIN"] ?? null;
+        self::$deploymentField = $context["DEPLOYMENT_FIELD"] ?? null;
+        self::$testTicket = $context["TEST_TICKET"] ?? null;
+        self::$testTicketTitle = $context["TEST_TICKET_TITLE"] ?? null;
 
-        if (!empty($context['JIRA_USER']) && !empty($context['JIRA_ACCESS_TOKEN']))
-        {
-            $jiraUser = $context['JIRA_USER'];
-            $token = $context['JIRA_ACCESS_TOKEN'];
+        $jiraUser = $context['JIRA_USER'] ?? null;
+        $token = $context['JIRA_ACCESS_TOKEN'] ?? null;
 
-            self::$jira = new JiraTicketSytem(self::$io, self::$config, self::$deploymentField, self::$jiraDomain, $jiraUser, $token);
-        }
+        self::$jira = new JiraTicketSytem(self::$io, self::$config, self::$deploymentField, self::$jiraDomain, $jiraUser, $token);
     }
 
 
