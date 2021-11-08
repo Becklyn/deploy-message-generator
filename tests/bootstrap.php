@@ -30,8 +30,13 @@ return function (array $context)
 
 
         $dotenv = new Dotenv();
-        // This will load the global config for the generator
-        $dotenv->load("{$home}/.deploy-message-generator.env");
+        try
+        {
+            // This will load the global config for the generator
+            $dotenv->load("{$home}/.deploy-message-generator.env");
+        } catch (\Symfony\Component\Dotenv\Exception\PathException $e) {
+            // ups the file does not exist - You better have the variables defined elsewhere
+        }
 
         // This will load the test specific configuration within the project dir
         $dotenv->loadEnv("{$projectDir}/.env");

@@ -50,10 +50,6 @@ class JiraIntegrationTest extends TestCase
 
     public function testGetTicketInfo () : void
     {
-        if (null === self::$jira) {
-            self::markTestSkipped("This integration test can only be run with a valid credentials");
-        }
-
         $ticketInfo = self::$jira->getTicketInfo(self::$testTicket);
         $baseUrl = self::$jiraDomain;
 
@@ -65,11 +61,6 @@ class JiraIntegrationTest extends TestCase
 
     public function testChangingDeploymentStatus () : void
     {
-        if (null === self::$jira)
-        {
-            self::markTestSkipped('This integration test can only be run with a valid credentials');
-        }
-
         $id = self::$testTicket;
         $prevStatus = self::$jira->getDeploymentStatus($id);
 
@@ -95,11 +86,6 @@ class JiraIntegrationTest extends TestCase
 
     public function testInvalidTicket () : void
     {
-        if (null === self::$jira)
-        {
-            self::markTestSkipped('This integration test can only be run with a valid credentials');
-        }
-
         $id = "NULL";
 
         $this->expectException(\Exception::class);
@@ -109,11 +95,6 @@ class JiraIntegrationTest extends TestCase
 
     public function testInvalidEnvironment () : void
     {
-        if (null === self::$jira)
-        {
-            self::markTestSkipped('This integration test can only be run with a valid credentials');
-        }
-
         $environment = "foo";
 
         $this->expectException(InvalidDeploymentEnvironmentException::class);
