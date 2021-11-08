@@ -8,7 +8,7 @@ require \dirname(__DIR__) . "/vendor/autoload_runtime.php";
 
 return function (array $context)
 {
-    $home = "Windows" === \PHP_OS_FAMILY ? $context['USERPROFILE'] : $context['HOME'];
+    $home = "Windows" === \PHP_OS_FAMILY ? $context["USERPROFILE"] : $context["HOME"];
     (new \Symfony\Component\Dotenv\Dotenv())->load("{$home}/.deploy-message-generator.env");
     $context += $_ENV;
 

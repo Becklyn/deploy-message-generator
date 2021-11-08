@@ -61,26 +61,26 @@ class DeployMessageGeneratorConfig
         $systemName = $this->config["ticket-system"] ?? "jira";
         $serviceConfig = $this->config[$systemName] ?? null;
 
-        if (empty($serviceConfig['domain'])) {
-            throw new IOException('Configuration variable jira.domain is not set');
+        if (empty($serviceConfig["domain"])) {
+            throw new IOException("Configuration variable jira.domain is not set");
         }
 
-        if (empty($serviceConfig['field'])) {
-            throw new IOException('Configuration variable jira.field is not set');
+        if (empty($serviceConfig["field"])) {
+            throw new IOException("Configuration variable jira.field is not set");
         }
 
-        if (empty($context['JIRA_USER'])) {
-            throw new IOException('Environment variable JIRA_USER is not set');
+        if (empty($context["JIRA_USER"])) {
+            throw new IOException("Environment variable JIRA_USER is not set");
         }
 
-        if (empty($context['JIRA_ACCESS_TOKEN'])) {
-            throw new IOException('Environment variable JIRA_ACCESS_TOKEN is not set');
+        if (empty($context["JIRA_ACCESS_TOKEN"])) {
+            throw new IOException("Environment variable JIRA_ACCESS_TOKEN is not set");
         }
 
-        $domain = $serviceConfig['domain'];
-        $deploymentField = $serviceConfig['field'];
-        $jiraUser = $context['JIRA_USER'];
-        $jiraAccessToken = $context['JIRA_ACCESS_TOKEN'];
+        $domain = $serviceConfig["domain"];
+        $deploymentField = $serviceConfig["field"];
+        $jiraUser = $context["JIRA_USER"];
+        $jiraAccessToken = $context["JIRA_ACCESS_TOKEN"];
 
         return new JiraTicketSytem($io, $this, $deploymentField, $domain, $jiraUser, $jiraAccessToken);
     }
@@ -98,16 +98,16 @@ class DeployMessageGeneratorConfig
 
         $serviceConfig = $this->config[$systemName] ?? null;
 
-        if (empty($serviceConfig['channel'])) {
-            throw new IOException('Configuration variable slack.channel is not set');
+        if (empty($serviceConfig["channel"])) {
+            throw new IOException("Configuration variable slack.channel is not set");
         }
 
-        if (empty($context['SLACK_ACCESS_TOKEN'])) {
-            throw new IOException('Environment variable SLACK_ACCESS_TOKEN is not set');
+        if (empty($context["SLACK_ACCESS_TOKEN"])) {
+            throw new IOException("Environment variable SLACK_ACCESS_TOKEN is not set");
         }
 
-        $channel = $serviceConfig['channel'];
-        $token = $context['SLACK_ACCESS_TOKEN'];
+        $channel = $serviceConfig["channel"];
+        $token = $context["SLACK_ACCESS_TOKEN"];
 
         return new SlackChatSystem($io, $token, $channel);
     }
@@ -167,7 +167,7 @@ class DeployMessageGeneratorConfig
 
     private function fetchEnvironments () : void
     {
-        foreach ($this->config['server'] as $environment => $aliases)
+        foreach ($this->config["server"] as $environment => $aliases)
         {
             $environment = u($environment)->camel()->title()->toString();
             self::$environments[$environment] = $environment;
