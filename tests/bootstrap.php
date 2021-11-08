@@ -12,6 +12,8 @@ return function (array $context)
     }
     elseif (method_exists(Dotenv::class, 'load'))
     {
+        $projectDir = dirname(__DIR__);
+
         if (!empty($context['HOME']))
         {
             $home = $context['HOME'];
@@ -23,11 +25,18 @@ return function (array $context)
         else
         {
             // Fallback to the project dir as home dir
-            $home = dirname(__DIR__);
+            $home = $projectDir;
         }
 
-        (new Dotenv())->load($home . '/.deploy-message-generator.env');
-        $context += $_ENV;
+
+        $dotenv = new Dotenv();
+        // This will load the global config for the generator
+        $dotenv->load("{$home}/.deploy-message-generator.env");
+
+        // This will load the test specific configuration within the project dir
+        $dotenv->loadEnv("{$projectDir}/.env");
+
+        $context += $_ENV + $_SERVER;
         return $context;
     }
     return $context;
