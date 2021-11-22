@@ -97,7 +97,7 @@ class SendDeployMessageRunner
 
         foreach ($ticketInfos as $ticketInfo)
         {
-            // Markdown: " - [JIRA-101](jira.com/browser/WALD-101) Some ticket"
+            // Markdown: " - [JIRA-101](jira.com/browser/JIRA-101) Some ticket"
             $mdMessage .= " - [{$ticketInfo->getId()}]({$ticketInfo->getUrl()}) {$ticketInfo->getTitle()}" . \PHP_EOL;
         }
 
