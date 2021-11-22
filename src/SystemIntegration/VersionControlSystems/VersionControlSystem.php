@@ -27,8 +27,9 @@ abstract class VersionControlSystem implements SystemIntegration
     protected function extractTicketsFromChangeLog(string $changelog, string $ticketRegex) : array
     {
         $matches = [];
-        \preg_match($ticketRegex, $changelog, $matches);
-        return \array_unique($matches);
+        \preg_match_all($ticketRegex, $changelog, $matches);
+
+        return \array_unique($matches[0] ?? []);
     }
 
 
@@ -38,6 +39,7 @@ abstract class VersionControlSystem implements SystemIntegration
     final public function getTicketIdsFromCommitRange(string $commitRange, string $ticketRegex) : array
     {
         $changeLog = $this->getChangelogFromCommitRange($commitRange);
+
         return $this->extractTicketsFromChangeLog($changeLog, $ticketRegex);
     }
 }
