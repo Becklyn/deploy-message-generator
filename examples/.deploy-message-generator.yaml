@@ -1,3 +1,7 @@
+##
+## This file should be placed in your project's root directory, which tells the deploy-message-generator exactly with what it's dealing with.
+##
+
 # The name of the project, which will be used by the chat integrations to e.g. format the deploy message.
 name: "name-of-project"
 
