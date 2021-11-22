@@ -30,7 +30,8 @@ class JiraTicketSytem extends TicketSystem
         $this->token = $token;
         $this->jiraUser = $jiraUser;
 
-        if (!$this->isDeploymentStatusFieldNameValid()) {
+        if (!$this->isDeploymentStatusFieldNameValid())
+        {
             throw new \InvalidArgumentException("The field \"{$deploymentFieldName}\" does not exist for your jira installation.");
         }
     }
@@ -90,6 +91,7 @@ class JiraTicketSytem extends TicketSystem
         }
     }
 
+
     protected function isDeploymentStatusFieldNameValid() : bool
     {
         try
@@ -107,16 +109,20 @@ class JiraTicketSytem extends TicketSystem
             }
 
             return false;
-        } catch (\Throwable $e) {
+        }
+        catch (\Throwable $e)
+        {
             throw new \Exception("Failed to make request to Jira", 1, $e);
         }
     }
+
 
     /**
      * @throws RedirectionExceptionInterface
      * @throws ClientExceptionInterface
      * @throws TransportExceptionInterface
      * @throws ServerExceptionInterface
+     * @throws \Exception
      */
     protected function sendRequest(string $method, string $endpoint, array $options = []) : ResponseInterface
     {
@@ -138,12 +144,12 @@ class JiraTicketSytem extends TicketSystem
         return $response;
     }
 
+
     /**
      * @inheritDoc
      */
     protected function setDeploymentStatus (string $id, ?string $deploymentStatus) : void
     {
-
         try
         {
             $status = null;

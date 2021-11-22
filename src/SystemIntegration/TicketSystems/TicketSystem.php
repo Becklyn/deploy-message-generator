@@ -22,25 +22,25 @@ abstract class TicketSystem implements SystemIntegration
     /**
      * Fetches the ticket infos of the ticket with the given id.
      */
-    abstract public function getTicketInfo(string $id) : TicketInfo;
+    abstract public function getTicketInfo (string $id) : TicketInfo;
 
     /**
      * Fetches the current deployment status of the ticket with the given id
      */
-    abstract protected function getDeploymentStatus(string $id) : string;
+    abstract protected function getDeploymentStatus (string $id) : string;
 
 
     /**
      * Changes the deployment status in the ticket system to the provided deployment status
      */
-    abstract protected function setDeploymentStatus(string $id, ?string $deploymentStatus) : void;
+    abstract protected function setDeploymentStatus (string $id, ?string $deploymentStatus) : void;
 
 
     /**
      * Checks if the deployment status may be changed before attempting to change it.
      * Passing null as deploymentStatus Argument will unset the deployment status.
      */
-    final public function changeDeploymentStatus(string $id, ?string $deploymentStatus) : void
+    final public function changeDeploymentStatus (string $id, ?string $deploymentStatus) : void
     {
         if (null !== $deploymentStatus)
         {
@@ -60,5 +60,5 @@ abstract class TicketSystem implements SystemIntegration
     /**
      * Returns a Regex string that can be used by the VersionControlSystem to find the ids in the commit messages
      */
-    abstract public function getTicketIdRegex() : string;
+    abstract public function getTicketIdRegex () : string;
 }
