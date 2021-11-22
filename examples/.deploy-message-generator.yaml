@@ -15,7 +15,7 @@ slack:
     channel: "ABCD1234"
 
 # The allowed environments as environment => [aliases].
-# The case of the environments will be transformed to PascalCase / capitalized CamelCase
+# The case of the environments will be transformed to PascalCase (capitalized CamelCase)
 server:
     production:
         - prod
