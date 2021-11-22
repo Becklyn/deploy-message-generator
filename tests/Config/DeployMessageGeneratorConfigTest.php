@@ -18,7 +18,7 @@ class DeployMessageGeneratorConfigTest extends TestCase
 
     public function testProjectName () : void
     {
-        $projectName = "deploy-message-generator";
+        $projectName = "name-of-project";
         self::assertEquals($projectName, self::$config->getProjectName());
     }
 
