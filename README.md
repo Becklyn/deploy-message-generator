@@ -3,6 +3,7 @@ Deploy message Generator
 
 A generator that produces beautiful deploy messages and integrates nicely with Slack and Jira.
 
+
 Installation
 ------------
 
@@ -10,8 +11,10 @@ Installation
 composer global require becklyn/deploy-message-generator
 ```
 
+
 Required Environment Variables
 ------------------------------
+
 These variables can also be defined by placing `.deploy-message-generator.env` in your `$Home` (or `%USERPROFILE%` for Windows) directory.
 
 | Variable Name            | Purpose |
@@ -20,6 +23,7 @@ These variables can also be defined by placing `.deploy-message-generator.env` i
 |                          |                                                                                                                          |
 | JIRA_USER                | The user used to lookup the ticket information                                                                           |
 | JIRA_ACCESS_TOKEN        | The access token for the `JIRA_USER`                                                                                     | 
+
 
 
 Configuration
