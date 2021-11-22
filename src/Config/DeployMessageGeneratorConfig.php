@@ -70,8 +70,8 @@ class DeployMessageGeneratorConfig
             throw new IOException("Configuration variable jira.field is not set");
         }
 
-        if (empty($context["JIRA_USER"])) {
-            throw new IOException("Environment variable JIRA_USER is not set");
+        if (empty($context["JIRA_USER_EMAIL"])) {
+            throw new IOException("Environment variable JIRA_USER_EMAIL is not set");
         }
 
         if (empty($context["JIRA_ACCESS_TOKEN"])) {
@@ -80,7 +80,7 @@ class DeployMessageGeneratorConfig
 
         $domain = $serviceConfig["domain"];
         $deploymentField = $serviceConfig["field"];
-        $jiraUser = $context["JIRA_USER"];
+        $jiraUser = $context["JIRA_USER_EMAIL"];
         $jiraAccessToken = $context["JIRA_ACCESS_TOKEN"];
 
         return new JiraTicketSytem($io, $this, $deploymentField, $domain, $jiraUser, $jiraAccessToken);

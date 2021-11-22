@@ -38,7 +38,7 @@ class JiraIntegrationTest extends TestCase
         self::$testTicket = $context["TEST_TICKET"] ?? null;
         self::$testTicketTitle = $context["TEST_TICKET_TITLE"] ?? null;
 
-        $jiraUser = $context['JIRA_USER'] ?? null;
+        $jiraUser = $context['JIRA_USER_EMAIL'] ?? null;
         $token = $context['JIRA_ACCESS_TOKEN'] ?? null;
 
         self::$jira = new JiraTicketSytem(self::$io, self::$config, self::$deploymentField, self::$jiraDomain, $jiraUser, $token);

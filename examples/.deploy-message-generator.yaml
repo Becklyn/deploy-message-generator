@@ -1,4 +1,5 @@
-name: "deploy-message-generator"
+# The name of the project, which will be used by the chat integrations to e.g. format the deploy message.
+name: "name-of-project"
 
 # Which system to use
 vcs: "git"
@@ -12,6 +13,7 @@ jira:
 
 # Custom configuration for slack system
 slack:
+    # The channel's id, which can be found by inspecting the channel's information (at the bottom, with a copy-button)
     channel: "ABCD1234"
 
 # The allowed environments as environment => [aliases].
