@@ -19,7 +19,8 @@ class DeployMessageGeneratorConfig
 {
     private array $config;
     private String $file;
-    /** @var Array<string, string> */
+
+    /** @var array<string, string> */
     private static array $environments = [];
 
     public function __construct (?string $configDir = null)
