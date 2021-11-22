@@ -1,0 +1,32 @@
+##
+## This file should be placed in your project's root directory, which tells the deploy-message-generator exactly with what it's dealing with.
+##
+
+# The name of the project, which will be used by the chat integrations to e.g. format the deploy message.
+name: "name-of-project"
+
+# Which system to use
+vcs: "git"
+ticket-system: "jira"
+chat-system: "slack"
+
+# Custom configuration for jira system
+jira:
+    domain: "foo.atlassian.net"
+    field: "Deployment Status"
+
+# Custom configuration for slack system
+slack:
+    # The channel's id, which can be found by inspecting the channel's information (at the bottom, with a copy-button)
+    channel: "ABCD1234"
+
+# The allowed environments as environment => [aliases].
+# The case of the environments will be transformed to PascalCase (capitalized CamelCase)
+server:
+    production:
+        - prod
+        - live
+    staging:
+        - stage
+        - test
+    integration:

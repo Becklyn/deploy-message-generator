@@ -1,2 +1,9 @@
 **/composer.lock
 **/vendor
+
+###> symfony/phpunit-bridge ###
+.phpunit.result.cache
+###< symfony/phpunit-bridge ###
+/.php-cs-fixer.cache
+
+.env*.local

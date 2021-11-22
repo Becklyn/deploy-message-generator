@@ -1,16 +1,21 @@
 <?php declare(strict_types=1);
 
-// This file will probably not be called from within symfony therefore we need to manually import the autoload
-require_once __DIR__ . "/vendor/autoload.php";
-
+use Becklyn\DeployMessageGenerator\Commands\SendDeployMessageCommand;
 use Composer\InstalledVersions;
 use Symfony\Component\Console\Application;
 
-$name = "becklyn/deploy-message-generator";
-$version = InstalledVersions::getVersion($name) ?? "UNKNOWN";
+require \dirname(__DIR__) . "/vendor/autoload_runtime.php";
 
-$application = new Application($name, $version);
+return function (array $context)
+{
+    $home = "Windows" === \PHP_OS_FAMILY ? $context["USERPROFILE"] : $context["HOME"];
+    (new \Symfony\Component\Dotenv\Dotenv())->load("{$home}/.deploy-message-generator.env");
+    $context += $_ENV;
 
-// TODO register commands
+    $name = "becklyn/deploy-message-generator";
+    $version = InstalledVersions::getVersion($name) ?? "UNKNOWN";
+    $application = new Application($name, $version);
+    $application->add(new SendDeployMessageCommand($context));
 
-$application->run();
+    return $application;
+};
