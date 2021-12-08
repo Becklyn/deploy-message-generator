@@ -28,6 +28,12 @@ abstract class ChatSystem implements SystemIntegration
 
     abstract protected function getChatter(?TransportInterface $transport = null) : Chatter;
 
+
+    /**
+     * If the number of tickets can be sent as message or if it exceeds the rate limit
+     */
+    abstract public function isWithinRateLimit(array $tickets) : bool;
+
     /**
      * @throws TransportExceptionInterface
      */

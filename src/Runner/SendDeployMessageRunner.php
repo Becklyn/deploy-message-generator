@@ -49,9 +49,16 @@ class SendDeployMessageRunner
 
         foreach ($ticketIds as $id)
         {
-            $ticketSystem->changeDeploymentStatus($id, $deploymentStatus);
-            $ticketInfo = $ticketSystem->getTicketInfo($id);
-            $tickets[] = $ticketInfo;
+            try
+            {
+                $ticketSystem->changeDeploymentStatus($id, $deploymentStatus);
+                $ticketInfo = $ticketSystem->getTicketInfo($id);
+                $tickets[] = $ticketInfo;
+            }
+            catch (\Exception $e)
+            {
+                $this->io->warning("Failed to update ticket '{$id}'.");
+            }
         }
 
         $shouldSendMessageViaChatSystem = $this->context[SendDeployMessageCommand::SEND_MESSAGE_FLAG_NAME];
@@ -64,7 +71,12 @@ class SendDeployMessageRunner
             $shouldSendMessageViaChatSystem = $this->io->askQuestion($question);
         }
 
-        if ($shouldSendMessageViaChatSystem)
+        if ($chatSystem->isWithinRateLimit($tickets))
+        {
+            $this->io->info("The number of tickets exceeds the message length limit and can thus not be sent via the chat system.");
+        }
+
+        if ($shouldSendMessageViaChatSystem && $chatSystem->isWithinRateLimit($tickets))
         {
             try
             {
