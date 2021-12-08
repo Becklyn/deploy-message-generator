@@ -3,7 +3,7 @@ version: 2
 jobs:
     php:
         docker:
-            -   image: becklyn/circleci-php7.4:latest
+            -   image: becklyn/circleci-php8.0:latest
 
         steps:
             - checkout
