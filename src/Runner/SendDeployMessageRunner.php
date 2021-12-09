@@ -57,7 +57,7 @@ class SendDeployMessageRunner
             }
             catch (\Exception $e)
             {
-                $this->io->warning("Failed to update ticket '{$id}'.");
+                $this->io->warning("Failed to update ticket '{$id}': Could not find or access given ticket (typo or permissions problem?).");
             }
         }
 
