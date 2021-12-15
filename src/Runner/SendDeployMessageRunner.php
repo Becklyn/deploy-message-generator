@@ -71,17 +71,13 @@ class SendDeployMessageRunner
             $shouldSendMessageViaChatSystem = $this->io->askQuestion($question);
         }
 
-        if ($chatSystem->isWithinRateLimit($tickets))
-        {
-            $this->io->info("The number of tickets exceeds the message length limit and can thus not be sent via the chat system.");
-        }
-
-        if ($shouldSendMessageViaChatSystem && $chatSystem->isWithinRateLimit($tickets))
+        if ($shouldSendMessageViaChatSystem)
         {
             try
             {
-                $chatMessage = $chatSystem->getChatMessage($tickets, $deploymentStatus, $project);
-                $chatSystem->sendMessage($chatMessage);
+                $thread = $chatSystem->getChatMessageThread($tickets, $deploymentStatus, $project);
+                $chatSystem->sendThread($thread);
+
             }
             catch (TransportExceptionInterface $e)
             {

@@ -8,6 +8,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Notifier\Chatter;
 use Symfony\Component\Notifier\Exception\TransportExceptionInterface;
 use Symfony\Component\Notifier\Message\ChatMessage;
+use Symfony\Component\Notifier\Message\SentMessage;
 use Symfony\Component\Notifier\Transport\TransportInterface;
 
 abstract class ChatSystem implements SystemIntegration
@@ -23,22 +24,40 @@ abstract class ChatSystem implements SystemIntegration
 
     /**
      * @param TicketInfo[] $tickets
+     *
+     * @return ChatMessage[]
      */
-    abstract public function  getChatMessage(array $tickets, string $deploymentStatus, string $project) : ChatMessage;
+    abstract public function  getChatMessageThread(array $tickets, string $deploymentStatus, string $project) : array;
 
     abstract protected function getChatter(?TransportInterface $transport = null) : Chatter;
 
-
     /**
-     * If the number of tickets can be sent as message or if it exceeds the rate limit
+     * Sends all Messages as thread of messages.
+     * The default implementation will send multiple messages into the configured chat.
+     *
+     * @param ChatMessage[] $messages
+     *
+     * @throws TransportExceptionInterface
+     *
+     * @return SentMessage[]
      */
-    abstract public function isWithinRateLimit(array $tickets) : bool;
+    public function sendThread (array $messages, ?TransportInterface $transport = null) : array
+    {
+        $responses = [];
+
+        foreach ($messages as $message)
+        {
+            $responses[] = $this->sendMessage($message, $transport);
+        }
+
+        return $responses;
+    }
 
     /**
      * @throws TransportExceptionInterface
      */
-    final public function sendMessage(ChatMessage $message, ?TransportInterface $transport = null) : void
+    final public function sendMessage(ChatMessage $message, ?TransportInterface $transport = null) : ?SentMessage
     {
-        $this->getChatter($transport)->send($message);
+        return $this->getChatter($transport)->send($message);
     }
 }
