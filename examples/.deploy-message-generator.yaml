@@ -12,8 +12,9 @@ chat-system: "slack"
 
 # Custom configuration for jira system
 jira:
+    # Change the domain for your Jira instance
     domain: "foo.atlassian.net"
-    field: "Deployment Status"
+    field: "Deployed?"
 
 # Custom configuration for slack system
 slack:
@@ -23,9 +24,9 @@ slack:
 # The allowed environments as environment => [aliases].
 # The case of the environments will be transformed to PascalCase (capitalized CamelCase)
 server:
-    production:
+    live:
         - prod
-        - live
+        - production
     staging:
         - stage
         - test
