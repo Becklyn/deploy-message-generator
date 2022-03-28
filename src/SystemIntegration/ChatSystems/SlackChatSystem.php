@@ -4,6 +4,7 @@ namespace Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems;
 
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketInfo;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Notifier\Bridge\Slack\Block\SlackBlockInterface;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackDividerBlock;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackSectionBlock;
 use Symfony\Component\Notifier\Bridge\Slack\SlackOptions;
@@ -18,7 +19,6 @@ class SlackChatSystem extends ChatSystem
 
     private string $channel;
 
-
     public function __construct (SymfonyStyle $io, string $token, string $channel)
     {
         parent::__construct($io);
@@ -30,35 +30,121 @@ class SlackChatSystem extends ChatSystem
     /**
      * @inheritdoc
      */
-    public function getChatMessage (array $tickets, string $deploymentStatus, string $project) : ChatMessage
+    public function getChatMessageThread (array $tickets, string $deploymentStatus, string $project) : array
     {
-        $message = (new ChatMessage("Deployment Info"))->transport("slack");
+        $deploymentHeader = "`{$project}` has been deployed to `{$deploymentStatus}`";
+        $extractText = fn($block) => $block->toArray()['text']['text'];
+        $blocks = $this->buildBlocks($tickets);
 
-        $options = (new SlackOptions())
-            ->block((new SlackSectionBlock())->text("`{$project}` has been deployed to `{$deploymentStatus}`"))
-            ->block((new SlackSectionBlock())->text($this->buildMarkdownList($tickets)))
-            ->block(new SlackDividerBlock());
+        $ticketTexts = \array_map($extractText, $blocks);
+        $messages = [];
+        $currentOptions = new SlackOptions();
+        $currentOptions->block((new SlackSectionBlock())->text($deploymentHeader));
 
-        return $message->options($options);
+        for ($i = 0; $i < \count($ticketTexts); ++$i)
+        {
+            $currentOptions->block((new SlackSectionBlock())->text($ticketTexts[$i]));
+
+            if ($i > 0 && 0 === $i % 47)
+            {
+                $currentOptions->block(new SlackDividerBlock());
+                $message = (new ChatMessage('Deployment Info'))->transport('slack')->options($currentOptions);
+                $messages[] = $message;
+                $currentOptions = new SlackOptions();
+                $currentOptions->block((new SlackSectionBlock())->text('The following tickets were also deployed:'));
+            }
+        }
+
+        $message = (new ChatMessage('Deployment Info'))->transport('slack')->options($currentOptions);
+        $messages[] = $message;
+
+        return $messages;
     }
 
 
     /**
+     * Creating the needed number of blocks with each block containing up to 3000 characters of text.
+     *
      * @param TicketInfo[] $tickets
+     *
+     * @return SlackBlockInterface[]
      */
-    private function buildMarkdownList(array $tickets) : string
+    private function buildBlocks (array $tickets) : array
     {
-        $markdownList = "";
+        $blocks = [];
+        $blockMessage = '';
+
+        foreach ($this->buildMarkdownList($tickets) as $listItem)
+        {
+            // truncating ticket information line.
+            if (\strlen($listItem) > 3000)
+            {
+                $listItem = \substr($listItem, 0, 3000 - 3) . '...';
+            }
+
+            // region check if ticket information line fits into current block
+            if (empty($blockMessage))
+            {
+                $blockMessage = $listItem;
+                continue;
+            }
+
+
+            if (\strlen($blockMessage . "\n" . $listItem) < 3000)
+            {
+                $blockMessage .= "\n" . $listItem;
+                continue;
+            }
+            // endregion
+
+            $blocks[] = (new SlackSectionBlock())->text($blockMessage);
+            $blockMessage = $listItem;
+        }
+
+        $blocks[] = (new SlackSectionBlock())->text($blockMessage);
+        return $blocks;
+    }
+
+    /**
+     * @param TicketInfo[] $tickets
+     *
+     * @return string[]
+     */
+    private function buildMarkdownList(array $tickets) : array
+    {
+        $markdownList = [];
 
         foreach ($tickets as $ticket) {
-            $markdownList .= "• <{$ticket->getUrl()}|{$ticket->getId()}> {$ticket->getTitle()}  \n";
+            $markdownList[] = "• <{$ticket->getUrl()}|{$ticket->getId()}> {$ticket->getTitle()}";
         }
 
         if (empty($markdownList)) {
-            return "No ticket information available";
+            $markdownList[] = "No ticket information available";
         }
 
         return $markdownList;
+    }
+
+    public function sendThread (array $messages, ?TransportInterface $transport = null) : array
+    {
+        $mainMessage = $messages[0];
+        $mainMessageResponse = $this->sendMessage($mainMessage, $transport);
+        $responses = [$mainMessageResponse];
+
+        for ($i = 1; $i < \count($messages); ++$i)
+        {
+            $message = $messages[$i];
+            /** @var SlackOptions $options */
+            $options = $message->getOptions();
+
+            if (null !== $mainMessageResponse->getMessageId())
+            {
+                $options->threadTs($mainMessageResponse->getMessageId());
+            }
+            $responses[] = $this->sendMessage($message, $transport);
+        }
+
+        return $responses;
     }
 
 

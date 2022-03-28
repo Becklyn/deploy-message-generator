@@ -49,9 +49,16 @@ class SendDeployMessageRunner
 
         foreach ($ticketIds as $id)
         {
-            $ticketSystem->changeDeploymentStatus($id, $deploymentStatus);
-            $ticketInfo = $ticketSystem->getTicketInfo($id);
-            $tickets[] = $ticketInfo;
+            try
+            {
+                $ticketSystem->changeDeploymentStatus($id, $deploymentStatus);
+                $ticketInfo = $ticketSystem->getTicketInfo($id);
+                $tickets[] = $ticketInfo;
+            }
+            catch (\Exception $e)
+            {
+                $this->io->warning("Failed to update ticket '{$id}': Could not find or access given ticket (typo or permissions problem?).");
+            }
         }
 
         $shouldSendMessageViaChatSystem = $this->context[SendDeployMessageCommand::SEND_MESSAGE_FLAG_NAME];
@@ -68,8 +75,9 @@ class SendDeployMessageRunner
         {
             try
             {
-                $chatMessage = $chatSystem->getChatMessage($tickets, $deploymentStatus, $project);
-                $chatSystem->sendMessage($chatMessage);
+                $thread = $chatSystem->getChatMessageThread($tickets, $deploymentStatus, $project);
+                $chatSystem->sendThread($thread);
+
             }
             catch (TransportExceptionInterface $e)
             {
