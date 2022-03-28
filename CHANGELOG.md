@@ -6,6 +6,7 @@
 *   (feature) Added utility function `ChatSystem::sendThread` to handle mass sending messages as thread
 *   (internal) The SendDeployMessageRunner will now automatically send threads
 
+
 1.0.1
 =====
 
