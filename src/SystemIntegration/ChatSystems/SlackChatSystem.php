@@ -30,8 +30,10 @@ class SlackChatSystem extends ChatSystem
     /**
      * @inheritdoc
      */
-    public function getChatMessageThread (array $tickets, string $deploymentStatus, string $project) : array
+    public function getChatMessageThread (array $tickets, string $deploymentStatus, string $project, array $mentions) : array
     {
+
+        $mentionsHeader = implode(' ', $mentions);
         $deploymentHeader = "`{$project}` has been deployed to `{$deploymentStatus}`";
         $extractText = fn($block) => $block->toArray()['text']['text'];
         $blocks = $this->buildBlocks($tickets);
@@ -40,6 +42,11 @@ class SlackChatSystem extends ChatSystem
         $messages = [];
         $currentOptions = new SlackOptions();
         $currentOptions->block((new SlackSectionBlock())->text($deploymentHeader));
+
+        if (0 !== \count($mentions))
+        {
+            $currentOptions->block((new SlackSectionBlock())->text($mentionsHeader));
+        }
 
         for ($i = 0; $i < \count($ticketTexts); ++$i)
         {

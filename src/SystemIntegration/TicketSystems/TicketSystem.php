@@ -61,4 +61,15 @@ abstract class TicketSystem implements SystemIntegration
      * Returns a Regex string that can be used by the VersionControlSystem to find the ids in the commit messages
      */
     abstract public function getTicketIdRegex () : string;
+
+
+    /**
+     * Generates a Deployment for the given Issues under the Field Releases in the Ticket
+     */
+    abstract public function generateDeployments (
+        array $context,
+        string $deploymentStatus,
+        array $issueKeys,
+        string $url
+    ) : JiraDeploymentResponse;
 }

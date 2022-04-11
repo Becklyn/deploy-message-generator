@@ -18,7 +18,8 @@
     },
     "require-dev": {
         "php": "^8.0",
-        "symfony/phpunit-bridge": "^5.3.10"
+        "symfony/phpunit-bridge": "^5.3.10",
+        "symfony/var-dumper": "^6.0"
     },
     "minimum-stability": "stable",
     "autoload": {
@@ -35,7 +36,10 @@
         "bin/deploy-message-generator"
     ],
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "symfony/runtime": true
+        }
     },
     "extra": {
         "runtime": {

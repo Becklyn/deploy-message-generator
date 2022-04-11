@@ -4,7 +4,7 @@ namespace Tests\Becklyn\DeployMessageGenerator\SystemIntegrations\TicketSystems;
 
 use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
 use Becklyn\DeployMessageGenerator\Exception\InvalidDeploymentEnvironmentException;
-use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\JiraTicketSytem;
+use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\JiraTicketSystem;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class JiraIntegrationTest extends TestCase
 {
-    static private ?JiraTicketSytem $jira = null;
+    static private ?JiraTicketSystem $jira = null;
     static private DeployMessageGeneratorConfig $config;
     static private SymfonyStyle $io;
 
@@ -41,7 +41,7 @@ class JiraIntegrationTest extends TestCase
         $jiraUser = $context['JIRA_USER_EMAIL'] ?? null;
         $token = $context['JIRA_ACCESS_TOKEN'] ?? null;
 
-        self::$jira = new JiraTicketSytem(self::$io, self::$config, self::$deploymentField, self::$jiraDomain, $jiraUser, $token);
+        self::$jira = new JiraTicketSystem(self::$io, self::$config, self::$deploymentField, self::$jiraDomain, $jiraUser, $token);
     }
 
 
@@ -76,7 +76,7 @@ class JiraIntegrationTest extends TestCase
         $token = "notAValidToken";
 
         $this->expectException(\Exception::class);
-        $jira = new JiraTicketSytem(self::$io, self::$config, self::$deploymentField, self::$jiraDomain, $user, $token);
+        $jira = new JiraTicketSystem(self::$io, self::$config, self::$deploymentField, self::$jiraDomain, $user, $token);
         $jira->getTicketInfo(self::$testTicket);
     }
 

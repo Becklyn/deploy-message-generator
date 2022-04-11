@@ -26,7 +26,7 @@ class SendDeployMessageRunner
     /**
      * Runs the deployment Message Generation Process
      */
-    public function run (string $commitRange, string $deploymentStatus) : void
+    public function run (string $commitRange, string $deploymentStatus, array $mentions) : void
     {
         $config = new DeployMessageGeneratorConfig();
 
@@ -34,7 +34,6 @@ class SendDeployMessageRunner
         {
             throw new InvalidDeploymentEnvironmentException($deploymentStatus, $config);
         }
-
 
         $ticketSystem = $config->getTicketSystem($this->io, $this->context);
         $vcs = $config->getVersionControlSystem($this->io, $this->context);
@@ -73,9 +72,18 @@ class SendDeployMessageRunner
 
         if ($shouldSendMessageViaChatSystem)
         {
+            if (0 !== \count($mentions))
+            {
+                $mentions = array_merge($config->getMentions(), $mentions);
+            }
+            else
+            {
+                $mentions = $config->getMentions();
+            }
+
             try
             {
-                $thread = $chatSystem->getChatMessageThread($tickets, $deploymentStatus, $project);
+                $thread = $chatSystem->getChatMessageThread($tickets, $deploymentStatus, $project, $mentions);
                 $chatSystem->sendThread($thread);
 
             }
@@ -88,6 +96,21 @@ class SendDeployMessageRunner
         else
         {
             $this->generateMessageForCopyPaste($tickets, $project, $deploymentStatus);
+        }
+
+        $url = $config->getStagingUrl();
+        if ("Production" === $deploymentStatus)
+        {
+            $url = $config->getProductionUrl();
+        }
+
+        $url = $url ?? $vcs->remoteOriginUrl();
+        $jiraDeploymentResponse = $ticketSystem->generateDeployments($this->context, $deploymentStatus, $ticketIds, $url);
+
+        if (!$jiraDeploymentResponse->isSuccessful())
+        {
+            $this->io->warning("JIRA API Error - Adding Deployment Failed");
+            $this->io->listing($jiraDeploymentResponse->getErrors());
         }
     }
 

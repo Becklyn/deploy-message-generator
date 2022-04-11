@@ -7,7 +7,7 @@ use Becklyn\DeployMessageGenerator\Exception\FormatException;
 use Becklyn\DeployMessageGenerator\Exception\IOException;
 use Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems\ChatSystem;
 use Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems\SlackChatSystem;
-use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\JiraTicketSytem;
+use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\JiraTicketSystem;
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketSystem;
 use Becklyn\DeployMessageGenerator\SystemIntegration\VersionControlSystems\GitVersionControlSystem;
 use Becklyn\DeployMessageGenerator\SystemIntegration\VersionControlSystems\VersionControlSystem;
@@ -62,19 +62,23 @@ class DeployMessageGeneratorConfig
         $systemName = $this->config["ticket-system"] ?? "jira";
         $serviceConfig = $this->config[$systemName] ?? null;
 
-        if (empty($serviceConfig["domain"])) {
+        if (empty($serviceConfig["domain"]))
+        {
             throw new IOException("Configuration variable jira.domain is not set");
         }
 
-        if (empty($serviceConfig["field"])) {
+        if (empty($serviceConfig["field"]))
+        {
             throw new IOException("Configuration variable jira.field is not set");
         }
 
-        if (empty($context["JIRA_USER_EMAIL"])) {
+        if (empty($context["JIRA_USER_EMAIL"]))
+        {
             throw new IOException("Environment variable JIRA_USER_EMAIL is not set");
         }
 
-        if (empty($context["JIRA_ACCESS_TOKEN"])) {
+        if (empty($context["JIRA_ACCESS_TOKEN"]))
+        {
             throw new IOException("Environment variable JIRA_ACCESS_TOKEN is not set");
         }
 
@@ -83,7 +87,7 @@ class DeployMessageGeneratorConfig
         $jiraUser = $context["JIRA_USER_EMAIL"];
         $jiraAccessToken = $context["JIRA_ACCESS_TOKEN"];
 
-        return new JiraTicketSytem($io, $this, $deploymentField, $domain, $jiraUser, $jiraAccessToken);
+        return new JiraTicketSystem($io, $this, $deploymentField, $domain, $jiraUser, $jiraAccessToken);
     }
 
 
@@ -163,6 +167,39 @@ class DeployMessageGeneratorConfig
         }
 
         return \array_keys(self::$environments);
+    }
+
+
+    public function getMentions () : array
+    {
+        if (empty($this->config["mentions"]))
+        {
+            return [];
+        }
+
+        return $this->config["mentions"];
+    }
+
+
+    public function getStagingUrl () : ?string
+    {
+        if (empty($this->config["urls"]["staging"]))
+        {
+            return null;
+        }
+
+        return $this->config["urls"]["staging"];
+    }
+
+
+    public function getProductionUrl () : ?string
+    {
+        if (empty($this->config["urls"]["production"]))
+        {
+            return null;
+        }
+
+        return $this->config["urls"]["production"];
     }
 
 
