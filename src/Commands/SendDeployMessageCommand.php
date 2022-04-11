@@ -37,7 +37,7 @@ class SendDeployMessageCommand extends Command
         parent::configure();
         $this->addArgument(self::DEPLOY_STATUS_ARG_NAME, InputArgument::REQUIRED, "The deployment status to be set. e.g. staging.");
         $this->addArgument(self::COMMIT_RANGE_ARG_NAME, InputArgument::REQUIRED, "The commit range that was deployed.");
-        $this->addArgument(self::ADD_MENTION,  InputArgument::IS_ARRAY, "Will Mention the Slack User in the Message.");
+        $this->addArgument(self::ADD_MENTION, InputArgument::IS_ARRAY, "Will Mention the Slack User in the Message.");
         $this->addOption(self::SEND_MESSAGE_FLAG_NAME, "m", InputOption::VALUE_NONE, "Will skip confirmation and send the message using the configured ChatSystem.");
         $this->addOption(self::COPY_MESSAGE_FLAG_NAME, "c", InputOption::VALUE_NONE, "Will skip confirmation and copy the message to the clipboard.");
         $this->setHelp("This command searches for all tickets that were deployed and creates a deploy message for them.");

@@ -74,7 +74,7 @@ class SendDeployMessageRunner
         {
             if (0 !== \count($mentions))
             {
-                $mentions = array_merge($config->getMentions(), $mentions);
+                $mentions = \array_merge($config->getMentions(), $mentions);
             }
             else
             {
@@ -99,6 +99,7 @@ class SendDeployMessageRunner
         }
 
         $url = $config->getStagingUrl();
+
         if ("Production" === $deploymentStatus)
         {
             $url = $config->getProductionUrl();

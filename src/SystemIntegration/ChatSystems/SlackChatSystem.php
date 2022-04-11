@@ -33,7 +33,7 @@ class SlackChatSystem extends ChatSystem
     public function getChatMessageThread (array $tickets, string $deploymentStatus, string $project, array $mentions) : array
     {
 
-        $mentionsHeader = implode(' ', $mentions);
+        $mentionsHeader = \implode(' ', $mentions);
         $deploymentHeader = "`{$project}` has been deployed to `{$deploymentStatus}`";
         $extractText = fn($block) => $block->toArray()['text']['text'];
         $blocks = $this->buildBlocks($tickets);

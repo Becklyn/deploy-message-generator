@@ -4,6 +4,7 @@ namespace Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems;
 
 /**
  * @author Marco Woehr <mw@becklyn.com>
+ *
  * @since 2022-04-08
  */
 class JiraDeploymentResponse
