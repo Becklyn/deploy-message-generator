@@ -36,10 +36,10 @@
         "bin/deploy-message-generator"
     ],
     "config": {
-        "sort-packages": true,
         "allow-plugins": {
             "symfony/runtime": true
-        }
+        },
+        "sort-packages": true
     },
     "extra": {
         "runtime": {
