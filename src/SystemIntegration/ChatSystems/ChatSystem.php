@@ -24,12 +24,25 @@ abstract class ChatSystem implements SystemIntegration
 
     /**
      * @param TicketInfo[] $tickets
+     * @param string[]     $mentions
+     * @param string[]     $urls
      *
      * @return ChatMessage[]
      */
-    abstract public function  getChatMessageThread(array $tickets, string $deploymentStatus, string $project) : array;
+    abstract public function getChatMessageThread (
+        array $tickets,
+        string $deploymentStatus,
+        string $project,
+        array $mentions,
+        array $urls
+    ) : array;
 
-    abstract protected function getChatter(?TransportInterface $transport = null) : Chatter;
+
+    /**
+     * Return the {@see Chatter} instance that is being used by this ChatSystem.
+     */
+    abstract protected function getChatter (?TransportInterface $transport = null) : Chatter;
+
 
     /**
      * Sends all Messages as thread of messages.
@@ -53,10 +66,11 @@ abstract class ChatSystem implements SystemIntegration
         return $responses;
     }
 
+
     /**
      * @throws TransportExceptionInterface
      */
-    final public function sendMessage(ChatMessage $message, ?TransportInterface $transport = null) : ?SentMessage
+    final public function sendMessage (ChatMessage $message, ?TransportInterface $transport = null) : ?SentMessage
     {
         return $this->getChatter($transport)->send($message);
     }

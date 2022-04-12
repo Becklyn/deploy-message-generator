@@ -22,6 +22,12 @@ abstract class VersionControlSystem implements SystemIntegration
 
 
     /**
+     * Returns the Remote Origin URL.
+     */
+    abstract protected function getRemoteOriginUrl() : string;
+
+
+    /**
      * Extracts a list of tickets from the changelog and returns it
      */
     protected function extractTicketsFromChangeLog(string $changelog, string $ticketRegex) : array
@@ -41,5 +47,11 @@ abstract class VersionControlSystem implements SystemIntegration
         $changeLog = $this->getChangelogFromCommitRange($commitRange);
 
         return $this->extractTicketsFromChangeLog($changeLog, $ticketRegex);
+    }
+
+
+    final public function remoteOriginUrl () : string
+    {
+        return $this->getRemoteOriginUrl();
     }
 }

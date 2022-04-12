@@ -29,4 +29,16 @@ class GitVersionControlSystem extends VersionControlSystem
 
         return $process->getOutput();
     }
+
+
+    /**
+     * @inheritDoc
+     */
+    protected function getRemoteOriginUrl () : string
+    {
+        $process = new Process(["git", "config", "--get", "remote.origin.url"]);
+        $process->run();
+
+        return $process->getOutput();
+    }
 }

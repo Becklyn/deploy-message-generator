@@ -31,3 +31,15 @@ server:
         - stage
         - test
     integration:
+
+urls:
+    staging:
+        - https://google.dev/
+    production:
+        - https://www.google.com/
+        - https://www.google.de/
+
+# The UserIds from Slack Users that should be Notified via '@Username'. You have to use the „Copy member ID” functionality from within the Slack User's full profile.
+# This functionality is most likely hidden within the „…” menu. See https://www.workast.com/help/articles/61000165203/
+mentions:
+    - "<@ABC1346>"

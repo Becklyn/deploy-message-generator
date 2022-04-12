@@ -2,17 +2,17 @@
 
 namespace Tests\Becklyn\DeployMessageGenerator\Config;
 
-use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
+use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfigurator;
 use PHPUnit\Framework\TestCase;
 
 class DeployMessageGeneratorConfigTest extends TestCase
 {
 
-    private static DeployMessageGeneratorConfig $config;
+    private static DeployMessageGeneratorConfigurator $config;
     public static function setUpBeforeClass () : void
     {
         parent::setUpBeforeClass();
-        self::$config = new DeployMessageGeneratorConfig(dirname(__DIR__, 2) . '/examples');
+        self::$config = new DeployMessageGeneratorConfigurator(dirname(__DIR__, 2) . '/examples');
     }
 
 
@@ -27,7 +27,7 @@ class DeployMessageGeneratorConfigTest extends TestCase
     {
         $environment = 'Staging';
         self::assertTrue(self::$config->isValidDeploymentStatus($environment));
-        self::assertEquals($environment, self::$config->getDeploymentEnvironmentFor($environment));
+        self::assertEquals($environment, self::$config->resolveDeploymentEnvironment($environment));
     }
 
 
@@ -37,7 +37,7 @@ class DeployMessageGeneratorConfigTest extends TestCase
         $alias = 'test';
 
         self::assertTrue(self::$config->isValidDeploymentStatus($alias));
-        self::assertEquals($environment, self::$config->getDeploymentEnvironmentFor($alias));
+        self::assertEquals($environment, self::$config->resolveDeploymentEnvironment($alias));
     }
 
 
