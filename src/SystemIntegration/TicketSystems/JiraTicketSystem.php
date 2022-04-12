@@ -189,7 +189,7 @@ class JiraTicketSystem extends TicketSystem
         }
         catch (\Throwable $e)
         {
-            throw new \Exception("Failed to make request to Jira", 1, $e);
+            throw new \RuntimeException("Failed to make request to Jira", 1, $e);
         }
     }
 

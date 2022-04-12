@@ -92,7 +92,7 @@ class JiraIntegrationTest extends TestCase
     {
         $environment = "foo";
 
-        $this->expectException(InvalidDeploymentEnvironmentException::class);
+        $this->expectException(\RuntimeException::class);
         self::$jira->changeDeploymentStatus(self::$testTicket, $environment);
     }
 }
