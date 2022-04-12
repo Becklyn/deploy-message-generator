@@ -16,6 +16,7 @@
     - `JIRA_CLIENT_SECRET` (type `string` — required): The corresponding OAuth Client Secret for the above Client Id.
       See `examples/.deploy-message-generator.yaml` for a more thorough explanation and additional resources.
 *   (improvement) General code clean up and refactorings.
+*   (feature) Add new `urls.*` to the Slack Deployment Message as interactive buttons.
 
 
 2.0.0

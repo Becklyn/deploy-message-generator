@@ -4,6 +4,7 @@ namespace Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems;
 
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketInfo;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Notifier\Bridge\Slack\Block\SlackActionsBlock;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackBlockInterface;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackDividerBlock;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackSectionBlock;
@@ -16,7 +17,6 @@ use Symfony\Component\Notifier\Transport\TransportInterface;
 class SlackChatSystem extends ChatSystem
 {
     private string $token;
-
     private string $channel;
 
     public function __construct (SymfonyStyle $io, string $token, string $channel)
@@ -30,9 +30,16 @@ class SlackChatSystem extends ChatSystem
     /**
      * @inheritdoc
      */
-    public function getChatMessageThread (array $tickets, string $deploymentStatus, string $project, array $mentions) : array
+    public function getChatMessageThread (
+        array $tickets,
+        string $deploymentStatus,
+        string $project,
+        array $mentions,
+        array $urls
+    ) : array
     {
-        $deploymentHeader = "`{$project}` has been deployed to `{$deploymentStatus}`";
+        $deploymentHeaderPrefix = \implode(' ', $mentions);
+        $deploymentHeader = \trim("{$deploymentHeaderPrefix}  `{$project}` has been deployed to `{$deploymentStatus}`");
         $extractText = static fn ($block) => $block->toArray()['text']['text'];
         $blocks = $this->buildBlocks($tickets);
 
@@ -40,12 +47,6 @@ class SlackChatSystem extends ChatSystem
         $messages = [];
         $currentOptions = new SlackOptions();
         $currentOptions->block((new SlackSectionBlock())->text($deploymentHeader));
-
-        if (0 !== \count($mentions))
-        {
-            $mentionsHeader = \implode(' ', $mentions);
-            $currentOptions->block((new SlackSectionBlock())->text($mentionsHeader));
-        }
 
         for ($i = 0; $i < \count($ticketTexts); ++$i)
         {
@@ -59,6 +60,18 @@ class SlackChatSystem extends ChatSystem
                 $currentOptions = new SlackOptions();
                 $currentOptions->block((new SlackSectionBlock())->text('The following tickets were also deployed:'));
             }
+        }
+
+        if (0 < \count($urls))
+        {
+            $actionsBlock = new SlackActionsBlock();
+
+            foreach ($urls as $url)
+            {
+                $actionsBlock->button($url, $url);
+            }
+
+            $currentOptions->block($actionsBlock);
         }
 
         $message = (new ChatMessage('Deployment Info'))->transport('slack')->options($currentOptions);

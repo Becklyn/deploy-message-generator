@@ -48,9 +48,11 @@ class SendDeployMessageRunner
             throw new InvalidDeploymentEnvironmentException($deploymentEnvironmentOrAlias, $configurator->getAllEnvironments());
         }
 
-        $this->io->writeln("Project: <fg=green>{$configurator->getProjectName()}</>");
-        $this->io->writeln("Environment: <fg=green>{$environment}</>");
-        $this->io->newLine(2);
+        $urls = $configurator->isProductionEnvironment($environment)
+            ? $configurator->getProductionUrls()
+            : $configurator->getStagingUrls();
+
+        $this->displayProjectInformation($configurator, $environment, $urls);
 
         $ticketSystem = $configurator->getTicketSystem($this->io, $this->context);
         $vcsSystem = $configurator->getVersionControlSystem($this->io, $this->context);
@@ -66,16 +68,40 @@ class SendDeployMessageRunner
             $tickets,
             [...$configurator->getMentions(), ...$additionalMentions],
             $this->context[SendDeployMessageCommand::NON_INTERACTIVE_FLAG_NAME],
+            $urls
         );
 
         $this->generateTicketDeploymentInformation(
-            $configurator,
             $vcsSystem,
             $ticketSystem,
             $environment,
             $tickets,
-            $commitRange
+            $commitRange,
+            $urls
         );
+    }
+
+
+    private function displayProjectInformation (
+        DeployMessageGeneratorConfigurator $configurator,
+        string $environment,
+        array $urls
+    ) : void
+    {
+        $this->io->writeln("Project: <fg=green>{$configurator->getProjectName()}</>");
+        $this->io->writeln("Environment: <fg=green>{$environment}</>");
+
+        $this->io->writeln("{$environment} URL(s):");
+
+        foreach ($urls as $url)
+        {
+            $this->io->writeln(\sprintf(
+                "<fg=green>  · %s</> ",
+                $url,
+            ));
+        }
+
+        $this->io->newLine(2);
     }
 
 
@@ -246,7 +272,8 @@ class SendDeployMessageRunner
         string $project,
         array $tickets,
         array $mentions,
-        bool $isNonInteractive
+        bool $isNonInteractive,
+        array $urls
     ) : void
     {
         $shouldSendMessageViaChatSystem = $this->context[SendDeployMessageCommand::SEND_MESSAGE_FLAG_NAME];
@@ -273,7 +300,7 @@ class SendDeployMessageRunner
             {
                 $this->io->write("Sending Deployment message… ");
 
-                $thread = $chatSystem->getChatMessageThread($tickets, $deploymentEnvironment, $project, $mentions);
+                $thread = $chatSystem->getChatMessageThread($tickets, $deploymentEnvironment, $project, $mentions, $urls);
                 $chatSystem->sendThread($thread);
 
                 $this->io->write("<fg=green>done</>.");
@@ -308,35 +335,20 @@ class SendDeployMessageRunner
      * @param string[] $tickets A List of Jira Issue keys, e.g. ABC-123
      */
     private function generateTicketDeploymentInformation (
-        DeployMessageGeneratorConfigurator $configurator,
         VersionControlSystem $vcsSystem,
         TicketSystem $ticketSystem,
         string $environment,
         array $tickets,
-        string $commitRange
+        string $commitRange,
+        array $urls
     ) : void
     {
         $this->io->writeln(" <fg=green>//</> Creating new Jira Deployment/Release Information with Tickets.");
         $this->io->newLine();
 
-        $urls = $configurator->isProductionEnvironment($environment)
-            ? $configurator->getProductionUrls()
-            : $configurator->getStagingUrls();
-        $urls = 0 < \count($urls) ? $urls : [$vcsSystem->remoteOriginUrl()];
-
-        $this->io->writeln("{$environment} URL(s):");
-
-        foreach ($urls as $url)
-        {
-            $this->io->writeln(\sprintf(
-                "<fg=green>  · %s</> ",
-                $url,
-            ));
-        }
-
-        $this->io->newLine();
-
         $this->io->write("Creating new Deployment/Release Information… ");
+
+        $urls = 0 < \count($urls) ? $urls : [$vcsSystem->remoteOriginUrl()];
 
         $jiraDeploymentResponse = $ticketSystem->generateDeployments(
             $this->context,

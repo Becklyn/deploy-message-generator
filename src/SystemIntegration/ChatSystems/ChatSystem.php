@@ -27,7 +27,13 @@ abstract class ChatSystem implements SystemIntegration
      *
      * @return ChatMessage[]
      */
-    abstract public function  getChatMessageThread (array $tickets, string $deploymentStatus, string $project, array $mentions) : array;
+    abstract public function getChatMessageThread (
+        array $tickets,
+        string $deploymentStatus,
+        string $project,
+        array $mentions,
+        array $urls
+    ) : array;
 
 
     /**
