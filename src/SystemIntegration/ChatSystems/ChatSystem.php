@@ -24,6 +24,8 @@ abstract class ChatSystem implements SystemIntegration
 
     /**
      * @param TicketInfo[] $tickets
+     * @param string[]     $mentions
+     * @param string[]     $urls
      *
      * @return ChatMessage[]
      */
