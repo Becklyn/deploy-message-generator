@@ -2,6 +2,13 @@
 
 namespace Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems;
 
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
+
 /**
  * @author Marco Woehr <mw@becklyn.com>
  *
@@ -9,18 +16,20 @@ namespace Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems;
  */
 class JiraDeploymentResponse
 {
-    private array $errors = [];
-    private ?int $code = null;
+    private ?int $code;
+    /** @var string[] */
+    private array $errors;
 
 
-    public function getErrors () : array
+    /**
+     * @param string[] $errors
+     */
+    private function __construct (
+        ?int $code,
+        array $errors
+    )
     {
-        return $this->errors;
-    }
-
-
-    public function setErrors (array $errors) : void
-    {
+        $this->code = $code;
         $this->errors = $errors;
     }
 
@@ -31,14 +40,63 @@ class JiraDeploymentResponse
     }
 
 
-    public function setCode (?int $code) : void
+    public function setCode (?int $code) : self
     {
         $this->code = $code;
+
+        return $this;
+    }
+
+
+    public function getErrors () : array
+    {
+        return $this->errors;
+    }
+
+
+    public function setErrors (array $errors) : self
+    {
+        $this->errors = $errors;
+
+        return $this;
     }
 
 
     public function isSuccessful () : bool
     {
         return 0 === \count($this->errors) || 202 !== $this->code;
+    }
+
+
+    /**
+     * @throws TransportExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws ClientExceptionInterface
+     */
+    public static function fromResponse (ResponseInterface $response) : self
+    {
+        $responseData = $response->toArray();
+        $errors = [];
+
+        foreach ($responseData["rejectedDeployments"] as $rejected)
+        {
+            foreach ($rejected["errors"] as $error)
+            {
+                $errors[] = $error["message"];
+            }
+        }
+
+        return new self($response->getStatusCode(), $errors);
+    }
+
+
+    /**
+     * @param string[] $errors
+     */
+    public static function fromErrors (array $errors) : self
+    {
+        return new self(500, $errors);
     }
 }

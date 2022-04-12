@@ -2,7 +2,7 @@
 
 namespace Tests\Becklyn\DeployMessageGenerator\SystemIntegrations\TicketSystems;
 
-use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
+use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfigurator;
 use Becklyn\DeployMessageGenerator\Exception\InvalidDeploymentEnvironmentException;
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\JiraTicketSystem;
 use PHPUnit\Framework\TestCase;
@@ -13,7 +13,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class JiraIntegrationTest extends TestCase
 {
     static private ?JiraTicketSystem $jira = null;
-    static private DeployMessageGeneratorConfig $config;
+    static private DeployMessageGeneratorConfigurator $config;
     static private SymfonyStyle $io;
 
     static private String $jiraDomain;
@@ -25,9 +25,7 @@ class JiraIntegrationTest extends TestCase
     {
         parent::setUpBeforeClass();
 
-        self::$config = new DeployMessageGeneratorConfig(dirname(__DIR__, 3) . '/examples');
-        $jiraConfig = self::$config->getConfigFor('jira');
-
+        self::$config = new DeployMessageGeneratorConfigurator(dirname(__DIR__, 3) . '/examples');
         self::$io = new SymfonyStyle(new StringInput(""), new ConsoleOutput());
 
         $bootstrap = require \dirname(__DIR__, 2) . '/bootstrap.php';

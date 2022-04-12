@@ -2,22 +2,25 @@
 
 namespace Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems;
 
-use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
-use Becklyn\DeployMessageGenerator\Exception\InvalidDeploymentEnvironmentException;
+use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfigurator;
 use Becklyn\DeployMessageGenerator\SystemIntegration\SystemIntegration;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 abstract class TicketSystem implements SystemIntegration
 {
     protected SymfonyStyle $io;
-    protected DeployMessageGeneratorConfig $config;
+    protected DeployMessageGeneratorConfigurator $config;
 
 
-    public function __construct (SymfonyStyle $io, DeployMessageGeneratorConfig $config)
+    public function __construct (
+        SymfonyStyle $io,
+        DeployMessageGeneratorConfigurator $config
+    )
     {
         $this->config = $config;
         $this->io = $io;
     }
+
 
     /**
      * Fetches the ticket infos of the ticket with the given id.
@@ -27,13 +30,13 @@ abstract class TicketSystem implements SystemIntegration
     /**
      * Fetches the current deployment status of the ticket with the given id
      */
-    abstract protected function getDeploymentStatus (string $id) : string;
+    abstract public function getDeploymentStatus (string $id) : string;
 
 
     /**
      * Changes the deployment status in the ticket system to the provided deployment status
      */
-    abstract protected function setDeploymentStatus (string $id, ?string $deploymentStatus) : void;
+    abstract public function setDeploymentStatus (string $id, ?string $deploymentStatus) : void;
 
 
     /**
@@ -42,18 +45,8 @@ abstract class TicketSystem implements SystemIntegration
      */
     final public function changeDeploymentStatus (string $id, ?string $deploymentStatus) : void
     {
-        if (null !== $deploymentStatus)
-        {
-            $deploymentStatus = $this->config->getDeploymentEnvironmentFor($deploymentStatus);
-
-            if (!$this->config->isValidDeploymentStatus($deploymentStatus)) {
-                throw new InvalidDeploymentEnvironmentException($deploymentStatus, $this->config);
-            }
-        }
-
         $this->setDeploymentStatus($id, $deploymentStatus);
         $status = empty($deploymentStatus) ? "null" : $deploymentStatus;
-        $this->io->info("Deployment status for {$id} was set to {$status}");
     }
 
 
@@ -65,11 +58,14 @@ abstract class TicketSystem implements SystemIntegration
 
     /**
      * Generates a Deployment for the given Issues under the Field Releases in the Ticket
+     *
+     * @param string[] $issueKeys A List of Jira Issue keys, e.g. ABC-123
      */
     abstract public function generateDeployments (
         array $context,
-        string $deploymentStatus,
+        string $environment,
         array $issueKeys,
-        string $url
+        array $urls,
+        string $commitRange
     ) : JiraDeploymentResponse;
 }

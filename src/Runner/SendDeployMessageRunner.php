@@ -3,116 +3,169 @@
 namespace Becklyn\DeployMessageGenerator\Runner;
 
 use Becklyn\DeployMessageGenerator\Commands\SendDeployMessageCommand;
-use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfig;
+use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfigurator;
 use Becklyn\DeployMessageGenerator\Exception\InvalidDeploymentEnvironmentException;
+use Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems\ChatSystem;
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketInfo;
+use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketSystem;
+use Becklyn\DeployMessageGenerator\SystemIntegration\VersionControlSystems\VersionControlSystem;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Notifier\Exception\TransportExceptionInterface;
 use Symfony\Component\Process\Process;
+use function Symfony\Component\String\u;
 
 class SendDeployMessageRunner
 {
     private array $context;
-
     private SymfonyStyle $io;
 
-    public function __construct (SymfonyStyle $io, array $context)
+
+    public function __construct (
+        SymfonyStyle $io,
+        array $context
+    )
     {
         $this->io = $io;
         $this->context = $context;
     }
 
+
     /**
      * Runs the deployment Message Generation Process
      */
-    public function run (string $commitRange, string $deploymentStatus, array $mentions) : void
+    public function run (
+        string $commitRange,
+        string $deploymentEnvironmentOrAlias,
+        array $additionalMentions
+    ) : void
     {
-        $config = new DeployMessageGeneratorConfig();
+        $configurator = new DeployMessageGeneratorConfigurator();
+        $environment = $configurator->resolveDeploymentEnvironment($deploymentEnvironmentOrAlias);
 
-        if (!$config->isValidDeploymentStatus($deploymentStatus))
+        if (null === $environment)
         {
-            throw new InvalidDeploymentEnvironmentException($deploymentStatus, $config);
+            throw new InvalidDeploymentEnvironmentException($deploymentEnvironmentOrAlias, $configurator->getAllEnvironments());
         }
 
-        $ticketSystem = $config->getTicketSystem($this->io, $this->context);
-        $vcs = $config->getVersionControlSystem($this->io, $this->context);
-        $chatSystem = $config->getChatSystem($this->io, $this->context);
+        $this->io->writeln("Project: <fg=green>{$configurator->getProjectName()}</>");
+        $this->io->writeln("Environment: <fg=green>{$environment}</>");
+        $this->io->newLine(2);
 
-        $project = $config->getProjectName();
-        $ticketRegex = $ticketSystem->getTicketIdRegex();
-        $deploymentStatus = $config->getDeploymentEnvironmentFor($deploymentStatus);
+        $ticketSystem = $configurator->getTicketSystem($this->io, $this->context);
+        $vcsSystem = $configurator->getVersionControlSystem($this->io, $this->context);
+        $chatSystem = $configurator->getChatSystem($this->io, $this->context);
 
-        $ticketIds = $vcs->getTicketIdsFromCommitRange($commitRange, $ticketRegex);
+        $tickets = $this->extractTicketInformationFromCommitRange($vcsSystem, $ticketSystem, $commitRange);
+        $this->updateDeploymentStatusForTickets($ticketSystem, $tickets, $environment);
+
+        $this->sendDeploymentMessageOrCopyToClipboard(
+            $chatSystem,
+            $environment,
+            $configurator->getProjectName(),
+            $tickets,
+            [...$configurator->getMentions(), ...$additionalMentions],
+            $this->context[SendDeployMessageCommand::NON_INTERACTIVE_FLAG_NAME],
+        );
+
+        $this->generateTicketDeploymentInformation(
+            $configurator,
+            $vcsSystem,
+            $ticketSystem,
+            $environment,
+            $tickets,
+            $commitRange
+        );
+    }
+
+
+    /**
+     * @return array The key will be the Ticket Id itself and the value will be the {@see TicketInfo}, fetched from the {@see TicketSystem}.
+     */
+    private function extractTicketInformationFromCommitRange (
+        VersionControlSystem $vcsSystem,
+        TicketSystem $ticketSystem,
+        string $commitRange
+    ) : array
+    {
+        $this->io->writeln(" <fg=green>//</> Extracting Tickets from Commit Range and fetching TicketInfo.");
+        $this->io->newLine();
+
         $tickets = [];
+        $hadErrors = false;
 
-        foreach ($ticketIds as $id)
+        foreach ($vcsSystem->getTicketIdsFromCommitRange($commitRange, $ticketSystem->getTicketIdRegex()) as $ticketId)
         {
             try
             {
-                $ticketSystem->changeDeploymentStatus($id, $deploymentStatus);
-                $ticketInfo = $ticketSystem->getTicketInfo($id);
-                $tickets[] = $ticketInfo;
+                $tickets[$ticketId] = $ticketSystem->getTicketInfo($ticketId);
             }
             catch (\Exception $e)
             {
-                $this->io->warning("Failed to update ticket '{$id}': Could not find or access given ticket (typo or permissions problem?).");
+                $this->io->warning("Could not fetch TicketInfo for '{$ticketId}' — skipping ticket. Typo or permissions problem?");
+                $hadErrors = true;
             }
         }
 
-        $shouldSendMessageViaChatSystem = $this->context[SendDeployMessageCommand::SEND_MESSAGE_FLAG_NAME];
-        $shouldCopyMessageToClipboard = $this->context[SendDeployMessageCommand::COPY_MESSAGE_FLAG_NAME];
-
-        // Interactive mode and no explicit flag whether to send or copy the message
-        if (!$this->context[SendDeployMessageCommand::NON_INTERACTIVE_FLAG_NAME] && !$shouldSendMessageViaChatSystem && !$shouldCopyMessageToClipboard)
+        if ($hadErrors)
         {
-            $question = new ConfirmationQuestion("Should the deployment message be sent using {$chatSystem->getName()}?", false);
-            $shouldSendMessageViaChatSystem = $this->io->askQuestion($question);
+            $this->io->newLine(2);
         }
 
-        if ($shouldSendMessageViaChatSystem)
-        {
-            if (0 !== \count($mentions))
-            {
-                $mentions = \array_merge($config->getMentions(), $mentions);
-            }
-            else
-            {
-                $mentions = $config->getMentions();
-            }
+        $this->io->writeln(\sprintf(
+            "Found <fg=green>%d</> tickets:",
+            \count($tickets)
+        ));
 
+        foreach ($tickets as $ticketInfo)
+        {
+            $this->io->writeln(\sprintf(
+                "<fg=green>  · %s</>: %s",
+                $ticketInfo->getId(),
+                $ticketInfo->getTitle(),
+            ));
+        }
+
+        $this->io->newLine(2);
+
+        return $tickets;
+    }
+
+
+    private function updateDeploymentStatusForTickets (
+        TicketSystem $ticketSystem,
+        array $tickets,
+        string $environment
+    ) : void
+    {
+        $this->io->writeln(" <fg=green>//</> Updating deployed field in Tickets.");
+        $this->io->newLine();
+
+        foreach ($tickets as $ticketId => $ticketInfo)
+        {
             try
             {
-                $thread = $chatSystem->getChatMessageThread($tickets, $deploymentStatus, $project, $mentions);
-                $chatSystem->sendThread($thread);
+                $this->io->write(\sprintf(
+                    "<fg=green>  · %s</>: %s… ",
+                    $ticketInfo->getId(),
+                    $ticketInfo->getTitle(),
+                ));
 
+                $ticketSystem->changeDeploymentStatus($ticketId, $environment);
+
+                $this->io->write("<fg=green>done</>.");
+                $this->io->newLine();
             }
-            catch (TransportExceptionInterface $e)
+            catch (\Exception $e)
             {
-                $this->io->error("Could not send deploy message due to a transport error. Generating message for copy/paste...");
-                $this->generateMessageForCopyPaste($tickets, $project, $deploymentStatus);
+                $this->io->write("<fg=red>failed</>.");
+
+                $this->io->warning("Failed to update Ticket '{$ticketId}': Could not find or access given ticket (typo or permissions problem?).");
+                $this->io->newLine();
             }
         }
-        else
-        {
-            $this->generateMessageForCopyPaste($tickets, $project, $deploymentStatus);
-        }
 
-        $url = $config->getStagingUrl();
-
-        if ("Production" === $deploymentStatus)
-        {
-            $url = $config->getProductionUrl();
-        }
-
-        $url = $url ?? $vcs->remoteOriginUrl();
-        $jiraDeploymentResponse = $ticketSystem->generateDeployments($this->context, $deploymentStatus, $ticketIds, $url);
-
-        if (!$jiraDeploymentResponse->isSuccessful())
-        {
-            $this->io->warning("JIRA API Error - Adding Deployment Failed");
-            $this->io->listing($jiraDeploymentResponse->getErrors());
-        }
+        $this->io->newLine(2);
     }
 
 
@@ -179,6 +232,131 @@ class SendDeployMessageRunner
         if (!$process->isSuccessful())
         {
             throw new \Exception();
+        }
+    }
+
+
+    /**
+     * @param string[]                  $mentions
+     * @param array<string, TicketInfo> $tickets
+     */
+    private function sendDeploymentMessageOrCopyToClipboard (
+        ChatSystem $chatSystem,
+        string $deploymentEnvironment,
+        string $project,
+        array $tickets,
+        array $mentions,
+        bool $isNonInteractive
+    ) : void
+    {
+        $shouldSendMessageViaChatSystem = $this->context[SendDeployMessageCommand::SEND_MESSAGE_FLAG_NAME];
+        $shouldCopyMessageToClipboard = $this->context[SendDeployMessageCommand::COPY_MESSAGE_FLAG_NAME];
+        $chatSystemName = u($chatSystem->getName())->title()->toString();
+
+        $this->io->writeln(" <fg=green>//</> Sending Deployment Message for Tickets via <fg=green>{$chatSystemName}</>.");
+        $this->io->newLine();
+
+        // Interactive mode and no explicit flag whether to send or copy the message
+        if (!$isNonInteractive && !$shouldSendMessageViaChatSystem && !$shouldCopyMessageToClipboard)
+        {
+            $this->io->newLine();
+
+            $question = new ConfirmationQuestion("Should the deployment message be sent via <fg=green>{$chatSystemName}</>?", false);
+            $shouldSendMessageViaChatSystem = $this->io->askQuestion($question);
+
+            $this->io->newLine();
+        }
+
+        if ($shouldSendMessageViaChatSystem)
+        {
+            try
+            {
+                $this->io->write("Sending Deployment message… ");
+
+                $thread = $chatSystem->getChatMessageThread($tickets, $deploymentEnvironment, $project, $mentions);
+                $chatSystem->sendThread($thread);
+
+                $this->io->write("<fg=green>done</>.");
+                $this->io->newLine(2);
+            }
+            catch (TransportExceptionInterface $e)
+            {
+                $this->io->write("<fg=red>failed</>.");
+                $this->io->newLine();
+
+                $this->io->error("Could not send Deployment Message due to a transport error.");
+
+                $this->io->write("Copying Deployment Message into Clipboard… ");
+                $this->generateMessageForCopyPaste($tickets, $project, $deploymentEnvironment);
+
+                $this->io->write("<fg=green>done</>.");
+                $this->io->newLine(2);
+            }
+        }
+        else
+        {
+            $this->io->write("Copying Deployment Message into Clipboard… ");
+            $this->generateMessageForCopyPaste($tickets, $project, $deploymentEnvironment);
+
+            $this->io->write("<fg=green>done</>.");
+            $this->io->newLine(2);
+        }
+    }
+
+
+    /**
+     * @param string[] $tickets A List of Jira Issue keys, e.g. ABC-123
+     */
+    private function generateTicketDeploymentInformation (
+        DeployMessageGeneratorConfigurator $configurator,
+        VersionControlSystem $vcsSystem,
+        TicketSystem $ticketSystem,
+        string $environment,
+        array $tickets,
+        string $commitRange
+    ) : void
+    {
+        $this->io->writeln(" <fg=green>//</> Creating new Jira Deployment/Release Information with Tickets.");
+        $this->io->newLine();
+
+        $urls = $configurator->isProductionEnvironment($environment)
+            ? $configurator->getProductionUrls()
+            : $configurator->getStagingUrls();
+        $urls = 0 < \count($urls) ? $urls : [$vcsSystem->remoteOriginUrl()];
+
+        $this->io->writeln("{$environment} URL(s):");
+
+        foreach ($urls as $url)
+        {
+            $this->io->writeln(\sprintf(
+                "<fg=green>  · %s</> ",
+                $url,
+            ));
+        }
+
+        $this->io->newLine();
+
+        $this->io->write("Creating new Deployment/Release Information… ");
+
+        $jiraDeploymentResponse = $ticketSystem->generateDeployments(
+            $this->context,
+            $environment,
+            \array_keys($tickets),
+            $urls,
+            $commitRange
+        );
+
+        if ($jiraDeploymentResponse->isSuccessful())
+        {
+            $this->io->write("<fg=green>done</>.");
+            $this->io->newLine();
+        }
+        else
+        {
+            $this->io->write("<fg=red>failed</>.");
+
+            $this->io->warning("JIRA API Error - Adding Deployment Failed");
+            $this->io->listing($jiraDeploymentResponse->getErrors());
         }
     }
 }

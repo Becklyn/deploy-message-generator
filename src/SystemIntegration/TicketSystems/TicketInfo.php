@@ -5,12 +5,15 @@ namespace Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems;
 class TicketInfo
 {
     private string $url;
-
     private string $id;
-
     private string $title;
 
-    public function __construct (string $id, string $title, string $url)
+
+    public function __construct (
+        string $id,
+        string $title,
+        string $url
+    )
     {
         $this->title = $title;
         $this->id = $id;
@@ -30,5 +33,11 @@ class TicketInfo
     public function getTitle () : string
     {
         return $this->title;
+    }
+
+
+    public function getDisplayTitle () : string
+    {
+        return "[{$this->getId()}] {$this->getTitle()}";
     }
 }
