@@ -89,9 +89,7 @@ class DeployMessageGeneratorConfig implements ConfigurationInterface
 
                 ->arrayNode("mentions")
                     ->defaultValue([])
-                    ->arrayPrototype()
-                        ->scalarPrototype()
-                        ->end()
+                    ->scalarPrototype()
                     ->end()
                 ->end()
             ->end();
