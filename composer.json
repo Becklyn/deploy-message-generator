@@ -7,21 +7,21 @@
     "require": {
         "php": ">=7.4",
         "ext-json": "*",
-        "symfony/config": "^5.4.7",
-        "symfony/console": "^v5.4.7",
-        "symfony/dotenv": "^v5.4.5",
-        "symfony/http-client": "^v5.4.7",
-        "symfony/notifier": "^v5.4.6",
-        "symfony/process": "^v5.4.7",
-        "symfony/runtime": "^v5.4.7",
-        "symfony/slack-notifier": "^v5.4.3",
-        "symfony/string": "^v5.4.3",
-        "symfony/yaml": "^v5.4.3"
+        "symfony/config": "^5.4.7 || ^v6.0.7",
+        "symfony/console": "^v5.4.7 || ^v6.0.7",
+        "symfony/dotenv": "^v5.4.5 || ^v6.0.5",
+        "symfony/http-client": "^v5.4.7 || ^v6.0.7",
+        "symfony/notifier": "^v5.4.6 || ^v6.0.6",
+        "symfony/process": "^v5.4.7 || ^v6.0.7",
+        "symfony/runtime": "^v5.4.7 || ^v6.0.7",
+        "symfony/slack-notifier": "^v5.4.3 || ^v6.0.3",
+        "symfony/string": "^v5.4.3 || ^v6.0.3",
+        "symfony/yaml": "^v5.4.3 || ^v6.0.3"
     },
     "require-dev": {
         "roave/security-advisories": "dev-latest",
-        "symfony/phpunit-bridge": "^v5.4.7",
-        "symfony/var-dumper": "^v5.4.6"
+        "symfony/phpunit-bridge": "^v5.4.7 || ^v6.0.7",
+        "symfony/var-dumper": "^v5.4.6 || ^v6.0.6"
     },
     "minimum-stability": "stable",
     "autoload": {

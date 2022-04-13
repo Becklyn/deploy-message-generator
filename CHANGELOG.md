@@ -2,6 +2,7 @@ vNext
 =====
 
 *   (internal) Replace CircleCI with GitHub Actions.
+*   (internal) Add proper support for running in PHP 7.4 with Symfony 5 and PHP >8 with Symfony 6.
 
 
 2.1.0
