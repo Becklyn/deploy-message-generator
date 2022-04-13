@@ -35,6 +35,13 @@ jobs:
               run: ./vendor/bin/php-cs-fixer fix --diff --config vendor-bin/test/vendor/becklyn/php-cs/.php_cs.dist.php --dry-run --no-interaction
 
             - name: PhpUnit
+              env:
+                  JIRA_ACCESS_TOKEN: '${{ secrets.JIRA_ACCESS_TOKEN }}'
+                  JIRA_CLIENT_ID: '${{ secrets.JIRA_CLIENT_ID }}'
+                  JIRA_CLIENT_SECRET: '${{ secrets.JIRA_CLIENT_SECRET }}'
+                  JIRA_CLOUD_ID: '${{ secrets.JIRA_CLOUD_ID }}'
+                  JIRA_USER_EMAIL: '${{ secrets.JIRA_USER_EMAIL }}'
+                  SLACK_ACCESS_TOKEN: '${{ secrets.SLACK_ACCESS_TOKEN }}'
               run: ./vendor/bin/simple-phpunit -c phpunit.xml --testdox
 
             - name: PhpStan
