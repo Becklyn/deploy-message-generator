@@ -1,3 +1,9 @@
+vNext
+=====
+
+*   (internal) Replace CircleCI with GitHub Actions.
+
+
 2.1.0
 =====
 
