@@ -51,7 +51,7 @@ class SendDeployMessageCommand extends Command
             ->addArgument(self::ADDITIONAL_MENTIONS, InputArgument::IS_ARRAY, "A list of Slack users that will be mentioned additional to those, that have been configured for this project.")
             ->addOption(self::SEND_MESSAGE_FLAG_NAME, "m", InputOption::VALUE_NONE, "Will skip confirmation and send the message using the configured ChatSystem.")
             ->addOption(self::COPY_MESSAGE_FLAG_NAME, "c", InputOption::VALUE_NONE, "Will skip confirmation and copy the message to the clipboard.")
-            ->setHelp("This command searches for all tickets that were deployed and creates a deploy message for them.");
+            ->setHelp("This command searches for all tickets that have been included in the given commit range, updates their ticket status, creates a deployment and sends a deploy message for them.");
     }
 
 
