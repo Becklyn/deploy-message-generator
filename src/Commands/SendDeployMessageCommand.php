@@ -2,7 +2,10 @@
 
 namespace Becklyn\DeployMessageGenerator\Commands;
 
+use Becklyn\DeployMessageGenerator\Exception\CommandAbortedException;
+use Becklyn\DeployMessageGenerator\ProjectInformation\ProjectInformationRenderer;
 use Becklyn\DeployMessageGenerator\Runner\SendDeployMessageRunner;
+use Becklyn\DeployMessageGenerator\TicketExtractor\TicketExtractor;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -68,15 +71,29 @@ class SendDeployMessageCommand extends Command
         $this->context[self::COPY_MESSAGE_FLAG_NAME] = $input->getOption(self::COPY_MESSAGE_FLAG_NAME);
         $this->context[self::NON_INTERACTIVE_FLAG_NAME] = $input->getOption(self::NON_INTERACTIVE_FLAG_NAME);
 
-        (new SendDeployMessageRunner($io, $this->context))->run(
-            $commitRange,
-            $deploymentStatus,
-            $mentions
-        );
+        try
+        {
+            $runner = new SendDeployMessageRunner(
+                $io,
+                new ProjectInformationRenderer(),
+                new TicketExtractor(),
+                $this->context
+            );
 
-        $io->newLine(2);
-        $io->success("Done.");
+            $runner->run(
+                $commitRange,
+                $deploymentStatus,
+                $mentions
+            );
 
-        return self::SUCCESS;
+            $io->newLine(2);
+            $io->success("Done.");
+
+            return self::SUCCESS;
+        }
+        catch (CommandAbortedException $e)
+        {
+            return self::FAILURE;
+        }
     }
 }

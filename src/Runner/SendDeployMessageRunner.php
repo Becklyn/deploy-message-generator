@@ -5,10 +5,12 @@ namespace Becklyn\DeployMessageGenerator\Runner;
 use Becklyn\DeployMessageGenerator\Commands\SendDeployMessageCommand;
 use Becklyn\DeployMessageGenerator\Config\DeployMessageGeneratorConfigurator;
 use Becklyn\DeployMessageGenerator\Exception\InvalidDeploymentEnvironmentException;
+use Becklyn\DeployMessageGenerator\ProjectInformation\ProjectInformationRenderer;
 use Becklyn\DeployMessageGenerator\SystemIntegration\ChatSystems\ChatSystem;
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketInfo;
 use Becklyn\DeployMessageGenerator\SystemIntegration\TicketSystems\TicketSystem;
 use Becklyn\DeployMessageGenerator\SystemIntegration\VersionControlSystems\VersionControlSystem;
+use Becklyn\DeployMessageGenerator\TicketExtractor\TicketExtractor;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Notifier\Exception\TransportExceptionInterface;
@@ -17,16 +19,22 @@ use function Symfony\Component\String\u;
 
 class SendDeployMessageRunner
 {
-    private array $context;
     private SymfonyStyle $io;
+    private ProjectInformationRenderer $projectInformationRenderer;
+    private TicketExtractor $ticketExtractor;
+    private array $context;
 
 
     public function __construct (
         SymfonyStyle $io,
+        ProjectInformationRenderer $projectInformationRenderer,
+        TicketExtractor $ticketExtractor,
         array $context
     )
     {
         $this->io = $io;
+        $this->projectInformationRenderer = $projectInformationRenderer;
+        $this->ticketExtractor = $ticketExtractor;
         $this->context = $context;
     }
 
@@ -42,24 +50,35 @@ class SendDeployMessageRunner
     {
         $configurator = new DeployMessageGeneratorConfigurator();
         $environment = $configurator->resolveDeploymentEnvironment($deploymentEnvironmentOrAlias);
+        $isNonInteractive = $this->context[SendDeployMessageCommand::NON_INTERACTIVE_FLAG_NAME];
 
         if (null === $environment)
         {
             throw new InvalidDeploymentEnvironmentException($deploymentEnvironmentOrAlias, $configurator->getAllEnvironments());
         }
 
-        $urls = $configurator->isProductionEnvironment($environment)
-            ? $configurator->getProductionUrls()
-            : $configurator->getStagingUrls();
-
-        $this->displayProjectInformation($configurator, $environment, $urls);
+        $urls = $configurator->getProjectUrlsForEnvironment($environment);
 
         $ticketSystem = $configurator->getTicketSystem($this->io, $this->context);
         $vcsSystem = $configurator->getVersionControlSystem($this->io, $this->context);
         $chatSystem = $configurator->getChatSystem($this->io, $this->context);
 
-        $tickets = $this->extractTicketInformationFromCommitRange($vcsSystem, $ticketSystem, $commitRange);
-        $this->updateDeploymentStatusForTickets($ticketSystem, $tickets, $environment);
+        $this->projectInformationRenderer->renderGeneralProjectInformationForEnvironment($this->io, $configurator, $environment);
+
+        $tickets = $this->ticketExtractor->extractAndRenderTicketInformationFromCommitRange(
+            $this->io,
+            $vcsSystem,
+            $ticketSystem,
+            $commitRange,
+            $environment,
+            $isNonInteractive
+        );
+
+        $this->updateDeploymentStatusForTickets(
+            $ticketSystem,
+            $tickets,
+            $environment
+        );
 
         $this->sendDeploymentMessageOrCopyToClipboard(
             $chatSystem,
@@ -67,7 +86,7 @@ class SendDeployMessageRunner
             $configurator->getProjectName(),
             $tickets,
             [...$configurator->getMentions(), ...$additionalMentions],
-            $this->context[SendDeployMessageCommand::NON_INTERACTIVE_FLAG_NAME],
+            $isNonInteractive,
             $urls
         );
 
@@ -79,82 +98,6 @@ class SendDeployMessageRunner
             $commitRange,
             $urls
         );
-    }
-
-
-    private function displayProjectInformation (
-        DeployMessageGeneratorConfigurator $configurator,
-        string $environment,
-        array $urls
-    ) : void
-    {
-        $this->io->writeln("Project: <fg=green>{$configurator->getProjectName()}</>");
-        $this->io->writeln("Environment: <fg=green>{$environment}</>");
-
-        $this->io->writeln("{$environment} URL(s):");
-
-        foreach ($urls as $url)
-        {
-            $this->io->writeln(\sprintf(
-                "<fg=green>  · %s</> ",
-                $url,
-            ));
-        }
-
-        $this->io->newLine(2);
-    }
-
-
-    /**
-     * @return array The key will be the Ticket Id itself and the value will be the {@see TicketInfo}, fetched from the {@see TicketSystem}.
-     */
-    private function extractTicketInformationFromCommitRange (
-        VersionControlSystem $vcsSystem,
-        TicketSystem $ticketSystem,
-        string $commitRange
-    ) : array
-    {
-        $this->io->writeln(" <fg=green>//</> Extracting Tickets from Commit Range and fetching TicketInfo.");
-        $this->io->newLine();
-
-        $tickets = [];
-        $hadErrors = false;
-
-        foreach ($vcsSystem->getTicketIdsFromCommitRange($commitRange, $ticketSystem->getTicketIdRegex()) as $ticketId)
-        {
-            try
-            {
-                $tickets[$ticketId] = $ticketSystem->getTicketInfo($ticketId);
-            }
-            catch (\Exception $e)
-            {
-                $this->io->warning("Could not fetch TicketInfo for '{$ticketId}' — skipping ticket. Typo or permissions problem?");
-                $hadErrors = true;
-            }
-        }
-
-        if ($hadErrors)
-        {
-            $this->io->newLine(2);
-        }
-
-        $this->io->writeln(\sprintf(
-            "Found <fg=green>%d</> tickets:",
-            \count($tickets)
-        ));
-
-        foreach ($tickets as $ticketInfo)
-        {
-            $this->io->writeln(\sprintf(
-                "<fg=green>  · %s</>: %s",
-                $ticketInfo->getId(),
-                $ticketInfo->getTitle(),
-            ));
-        }
-
-        $this->io->newLine(2);
-
-        return $tickets;
     }
 
 
@@ -288,7 +231,7 @@ class SendDeployMessageRunner
         {
             $this->io->newLine();
 
-            $question = new ConfirmationQuestion("Should the deployment message be sent via <fg=green>{$chatSystemName}</>?", false);
+            $question = new ConfirmationQuestion("Should the deployment message be sent via <fg=green>{$chatSystemName}</>?", true);
             $shouldSendMessageViaChatSystem = $this->io->askQuestion($question);
 
             $this->io->newLine();

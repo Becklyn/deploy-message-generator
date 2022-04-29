@@ -204,6 +204,14 @@ class DeployMessageGeneratorConfigurator
     }
 
 
+    public function getProjectUrlsForEnvironment (?string $environment) : array
+    {
+        return $this->isProductionEnvironment($environment)
+            ? $this->getProductionUrls()
+            : $this->getStagingUrls();
+    }
+
+
     public function isProductionEnvironment (?string $environment) : bool
     {
         switch (u($environment)->lower())

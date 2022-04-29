@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 
 use Becklyn\DeployMessageGenerator\Commands\SendDeployMessageCommand;
+use Becklyn\DeployMessageGenerator\Commands\ShowTicketInformationCommand;
 use Composer\InstalledVersions;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Dotenv\Dotenv;
@@ -26,6 +27,7 @@ $app = static function (array $context) : Application {
     $version = InstalledVersions::getVersion($name) ?? "UNKNOWN";
     $application = new Application($name, $version);
     $application->add(new SendDeployMessageCommand($context));
+    $application->add(new ShowTicketInformationCommand($context));
 
     return $application;
 };
