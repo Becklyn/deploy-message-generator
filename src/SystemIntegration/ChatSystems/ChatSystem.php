@@ -34,7 +34,8 @@ abstract class ChatSystem implements SystemIntegration
         string $deploymentStatus,
         string $project,
         array $mentions,
-        array $urls
+        array $urls,
+        string $deployUser
     ) : array;
 
 

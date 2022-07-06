@@ -54,9 +54,10 @@ class TicketExtractor
         foreach ($tickets as $ticketInfo)
         {
             $io->writeln(\sprintf(
-                "<fg=green>  · %s</>: %s",
+                "<fg=green>  · %s</>: %s (%s)",
                 $ticketInfo->getId(),
                 $ticketInfo->getTitle(),
+                $ticketInfo->getUrl(),
             ));
         }
 
