@@ -2,6 +2,7 @@
 =====
 
 * (improvement) Added the deploying user to the slack deploy message.
+* (improvement) Added a link to be able to open the jira ticket from the deploy message.
 
 
 2.2.0
