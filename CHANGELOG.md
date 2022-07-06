@@ -1,3 +1,9 @@
+2.3.0
+=====
+
+* (improvement) Added the deploying user to the slack deploy message.
+
+
 2.2.0
 =====
 

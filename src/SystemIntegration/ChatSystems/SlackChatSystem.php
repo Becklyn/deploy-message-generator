@@ -35,11 +35,12 @@ class SlackChatSystem extends ChatSystem
         string $deploymentStatus,
         string $project,
         array $mentions,
-        array $urls
+        array $urls,
+        string $deployUser
     ) : array
     {
         $deploymentHeaderPrefix = \implode(' ', $mentions);
-        $deploymentHeader = \trim("{$deploymentHeaderPrefix}  `{$project}` has been deployed to `{$deploymentStatus}`");
+        $deploymentHeader = \trim("{$deploymentHeaderPrefix}  `{$project}` has been deployed to `{$deploymentStatus}` by {$deployUser}");
         $extractText = static fn ($block) => $block->toArray()['text']['text'];
         $blocks = $this->buildBlocks($tickets);
 

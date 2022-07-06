@@ -17,12 +17,13 @@ Required Environment Variables
 
 These variables can also be defined by placing `.deploy-message-generator.env` in your `$Home` (or `%USERPROFILE%` for Windows) directory.
 
-| Variable Name            | Purpose |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| SLACK_ACCESS_TOKEN       | Token needed to send messages to Slack                                                                                   |
-|                          |                                                                                                                          |
-| JIRA_USER_EMAIL          | The email address of the user used to lookup the ticket information                                                      |
-| JIRA_ACCESS_TOKEN        | The access token for the `JIRA_USER_EMAIL` (https://id.atlassian.com/manage-profile/security/api-tokens)                 |
+| Variable Name      | Purpose                                                                                                  |
+|--------------------|----------------------------------------------------------------------------------------------------------|
+| SLACK_ACCESS_TOKEN | Token needed to send messages to Slack                                                                   |
+| SLACK_USER_MENTION | The slack user mention to „sign“ a deployment                                                            |
+|                    |                                                                                                          |
+| JIRA_USER_EMAIL    | The email address of the user used to lookup the ticket information                                      |
+| JIRA_ACCESS_TOKEN  | The access token for the `JIRA_USER_EMAIL` (https://id.atlassian.com/manage-profile/security/api-tokens) |
 
 
 Configuration
