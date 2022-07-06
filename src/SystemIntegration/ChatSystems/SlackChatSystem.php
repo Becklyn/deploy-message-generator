@@ -43,15 +43,14 @@ class SlackChatSystem extends ChatSystem
         $deploymentHeader = \trim("{$deploymentHeaderPrefix}  `{$project}` has been deployed to `{$deploymentStatus}` by {$deployUser}");
         $extractText = static fn ($block) => $block->toArray()['text']['text'];
         $blocks = $this->buildBlocks($tickets);
-
         $ticketTexts = \array_map($extractText, $blocks);
         $messages = [];
         $currentOptions = new SlackOptions();
         $currentOptions->block((new SlackSectionBlock())->text($deploymentHeader));
 
-        for ($i = 0; $i < \count($ticketTexts); ++$i)
+        foreach ($ticketTexts as $i => $ticketText)
         {
-            $currentOptions->block((new SlackSectionBlock())->text($ticketTexts[$i]));
+            $currentOptions->block((new SlackSectionBlock())->text($ticketText));
 
             if ($i > 0 && 0 === $i % 47)
             {
@@ -153,13 +152,13 @@ class SlackChatSystem extends ChatSystem
         $mainMessageResponse = $this->sendMessage($mainMessage, $transport);
         $responses = [$mainMessageResponse];
 
-        for ($i = 1; $i < \count($messages); ++$i)
+        for ($i = 1, $iMax = \count($messages); $i < $iMax; ++$i)
         {
             $message = $messages[$i];
             /** @var SlackOptions $options */
             $options = $message->getOptions();
 
-            if (null !== $mainMessageResponse->getMessageId())
+            if (null !== $mainMessageResponse && null !== $mainMessageResponse->getMessageId())
             {
                 $options->threadTs($mainMessageResponse->getMessageId());
             }
