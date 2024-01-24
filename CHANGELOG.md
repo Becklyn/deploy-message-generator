@@ -1,3 +1,11 @@
+2.3.0
+=====
+
+* (improvement) Added the deploying user to the slack deploy message.
+* (improvement) Added a link to be able to open the jira ticket from the deploy message.
+* (improvement) General code clean up and refactorings.
+
+
 2.2.0
 =====
 

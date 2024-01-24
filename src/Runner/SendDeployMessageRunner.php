@@ -243,7 +243,7 @@ class SendDeployMessageRunner
             {
                 $this->io->write("Sending Deployment message… ");
 
-                $thread = $chatSystem->getChatMessageThread($tickets, $deploymentEnvironment, $project, $mentions, $urls);
+                $thread = $chatSystem->getChatMessageThread($tickets, $deploymentEnvironment, $project, $mentions, $urls, $this->context["SLACK_USER_MENTION"]);
                 $chatSystem->sendThread($thread);
 
                 $this->io->write("<fg=green>done</>.");
