@@ -59,6 +59,7 @@ class JiraTicketSystem extends TicketSystem
         try
         {
             $response = $this->sendRequest("GET", "https://{$this->domain}/rest/api/2/issue/{$id}?fields=summary");
+
             $data = $response->toArray();
 
             $title = $data["fields"]["summary"];
@@ -68,7 +69,7 @@ class JiraTicketSystem extends TicketSystem
         }
         catch (\Throwable $e)
         {
-            throw new \Exception("Failed to make request to Jira", 1, $e);
+            throw new \Exception("Failed to make request to Jira getTicketInfo({$id})", 1, $e);
         }
     }
 
@@ -94,7 +95,7 @@ class JiraTicketSystem extends TicketSystem
         }
         catch (\Throwable $e)
         {
-            throw new \Exception("Failed to make request to Jira", 1, $e);
+            throw new \Exception("Failed to make request to Jira getDeploymentStatus({$id})", 1, $e);
         }
     }
 
@@ -121,7 +122,7 @@ class JiraTicketSystem extends TicketSystem
         }
         catch (\RuntimeException|RedirectionExceptionInterface|ClientExceptionInterface|TransportExceptionInterface|ServerExceptionInterface $e)
         {
-            throw new \Exception("Failed to make request to Jira", 1, $e);
+            throw new \Exception("Failed to make request to Jira getDeploymentFieldKeyByFieldName({$deploymentFieldName})", 1, $e);
         }
     }
 
@@ -189,7 +190,7 @@ class JiraTicketSystem extends TicketSystem
         }
         catch (\Throwable $e)
         {
-            throw new \RuntimeException("Failed to make request to Jira", 1, $e);
+            throw new \RuntimeException("Failed to make request to Jira setDeploymentStatus({$id}, {$deploymentStatus})", 1, $e);
         }
     }
 
